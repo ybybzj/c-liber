@@ -3,6 +3,7 @@ TargetName = main
 CC = c99
 CFLAGS = -g -O3 -Wall -Wextra  -rdynamic -DNDEBUG $(DEFS) $(OPTFLAGS) -I$(SRCDIR) $(INCFLAGS)
 DEV_CFLAGS = -g -Wall -Wextra  $(DEFS) $(OPTFLAGS) -I$(SRCDIR) $(INCFLAGS)
+TEST_CFLAGS = -g -Wall -Wextra  $(DEFS) $(OPTFLAGS) $(TESTFLAGS) -I$(SRCDIR) $(INCFLAGS)
 LDLIBS = $(LIBDIRS) $(LIBS)
 
 
@@ -66,7 +67,7 @@ $(TARGET_A): lib $(OBJECTS)
 	ranlib $(BUILD)/$@
 
 $(TARGET_SO): $(TARGET_A) $(OBJECTS)
-	$(CC) -shared -o $(BUILD)/$@ $(OBJECTS)
+	$(CC) -shared -o $(BUILD)/$@ $(OBJECTS) $(LDLIBS)
 endif
 bin:
 	@mkdir -p $(BUILD)/bin
@@ -95,9 +96,9 @@ test-v: test-build
 test-build: $(TESTS)
 
 $(TESTS): CFLAGS = $(DEV_CFLAGS)
-$(TESTS): $(OBJECTS) $(TEST_SRC)
+$(TESTS): dev $(TEST_SRC)
 $(TESTDIR)/%: $(TESTDIR)/%.c
-	$(CC) $(CFLAGS) -I$(TESTDIR) $< $(filter-out %main.o,$(OBJECTS)) $(LDLIBS) -o $@
+	$(CC) $(CFLAGS) -I$(TESTDIR) $< $(BUILD_DEV)/$(TARGET_SO) $(TESTLIBS) -o $@
 
 #### --Section-- Automatically generated  headers dependencies ####
 %.d: %.c

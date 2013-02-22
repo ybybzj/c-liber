@@ -13,7 +13,7 @@ TargetName = liber
 # Export directory of     #
 # header files            #
 #=========================#
-#INCDIR = include/liber
+INCDIR = include/liber
 
 #=========================#
 # Include flags for       #
@@ -34,12 +34,17 @@ OPTFLAGS = -pthread
 #===========================#
 # Flags for lib Directories #
 #===========================#
-#LIBDIRS =
+#LIBDIRS = -Wl,-rpath,deps -Ldeps
 
 #=========================#
 # Lib flags               #
 #=========================#
 LIBS = -lrt
+
+#================================#
+# Flags for test lib dependencies#
+#================================#
+#TESTLIBS = 
 
 #=========================#
 # Names of skipped tests  #

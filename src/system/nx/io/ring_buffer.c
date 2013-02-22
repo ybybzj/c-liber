@@ -1,6 +1,7 @@
 #define _GNU_SOURCE
 #include "ring_buffer.h"
 #include "../common.h"
+#include "../time.h"
 #include <errno.h>
 #include <fcntl.h>
 #include <sys/stat.h>
@@ -11,13 +12,7 @@
 #define RB_MAPFILE_NAME_LEN 31
 
 
-long get_timestamp()
-{
-	struct timespec now, res;
-	check(clock_gettime(CLOCK_REALTIME ,&now) != -1, return -1);
-	check(clock_getres(CLOCK_REALTIME ,&res) != -1, return -1);
-	return ((long)now.tv_sec) * now.tv_nsec / res.tv_nsec;
-}
+
 
 int ring_buffer_create(ring_buffer_t *rbuf, unsigned long size)
 {
@@ -30,7 +25,7 @@ int ring_buffer_create(ring_buffer_t *rbuf, unsigned long size)
 	rbuf->size = size;
 
 	
-	check((sufix_num = get_timestamp()) != -1, return -1);
+	check((sufix_num = get_timestamp(TM_UNIT_MS)) != -1, return -1);
 	snprintf(map_file_name,RB_MAPFILE_NAME_LEN, RB_MAPFILE_NAME_PATTERN, sufix_num);
 	// println("map_file_name: %s",map_file_name);
 	check((fd = shm_open(map_file_name, O_RDWR|O_CREAT|O_EXCL, S_IRUSR | S_IWUSR)) != -1,return -1);
