@@ -35,8 +35,12 @@ long get_timestamp(int unit)
 
 
 #define CURT_STR_LEN 256
+#ifdef _POSIX_THREADS
 static char * _current_time_t(const char *tfmt);
+#else
 static char * _current_time(const char *tfmt);
+#endif
+
 char * current_time(const char *tfmt)
 {
 #ifdef _POSIX_THREADS
@@ -96,12 +100,13 @@ static void free_ct_key(void *buf)
 	printf("buf: %p\n",buf);
 	free(buf);
 }
-#endif
+#else
 
 //non-reentrant
 static char ct_str[CURT_STR_LEN];
-static char * _current_time(const char *tfmt)
+static char* _current_time(const char *tfmt)
 {
 	check(current_time_r(tfmt, ct_str, CURT_STR_LEN) != NULL, return "(unknown/t)");
 	return ct_str;
 }
+#endif

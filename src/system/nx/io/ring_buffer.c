@@ -8,7 +8,7 @@
 #include <sys/mman.h>
 #include <time.h>
 #include <stdio.h>
-#define RB_MAPFILE_NAME_PATTERN "/rbuf_map_file_%ld"
+#define RB_MAPFILE_NAME_PATTERN "/rbuf_map_file_%lld"
 #define RB_MAPFILE_NAME_LEN 31
 
 
@@ -17,16 +17,13 @@
 int ring_buffer_create(ring_buffer_t *rbuf, unsigned long size)
 {
 	int fd;
-	long sufix_num;
 
 	char map_file_name[RB_MAPFILE_NAME_LEN] = {'\0'};
 	check(rbuf != NULL && size > 0, errno = EINVAL;return -1);
 	size = (size + (1UL << 12) - 1) >> 12 << 12;
 	rbuf->size = size;
 
-	
-	check((sufix_num = get_timestamp(TM_UNIT_MS)) != -1, return -1);
-	snprintf(map_file_name,RB_MAPFILE_NAME_LEN, RB_MAPFILE_NAME_PATTERN, sufix_num);
+	snprintf(map_file_name,RB_MAPFILE_NAME_LEN, RB_MAPFILE_NAME_PATTERN, (long long)rbuf);//every single rbuf need a different map file name
 	// println("map_file_name: %s",map_file_name);
 	check((fd = shm_open(map_file_name, O_RDWR|O_CREAT|O_EXCL, S_IRUSR | S_IWUSR)) != -1,return -1);
 	check(shm_unlink(map_file_name) != -1, close(fd);return -1);

@@ -59,4 +59,10 @@ sigprocmask(SIG_SETMASK,&__org_sigset__,NULL)
 
 #define SIG_HDL_REG(sa_mask, sa_flags, handler,...) \
 sig_handler_register(sa_mask, sa_flags, handler, ##__VA_ARGS__,SIGNULL)
+
+#define IGNORE_SIG(...) \
+sig_handler_register(emptysigset(),0,SIG_IGN, ##__VA_ARGS__,SIGNULL)
+
+#define DEFAULT_SIG(...) \
+sig_handler_register(emptysigset(),0,SIG_DFL, ##__VA_ARGS__,SIGNULL)
 #endif
