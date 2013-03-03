@@ -16,4 +16,16 @@ ssize_t fd_rbuf_readl(fd_rbuf_t *rbufp, void *buf, int n);
 ssize_t writen(int fd, const void *buffer, size_t n);
 
 int make_unblock(int fd);
+
+/**
+ * fd_dump - stream data between two file descriptors, read data from first one and write data to the other
+ *				until get EOF
+ * @rfd:		the file descriptor from which data is read
+ * @wfd:		the file descriptor to which data is write
+ * @finish_cb:	function pointer to the callback function to invoke when all data is streamed or an error occured.
+ * @arg:		argument pass to the callback function 
+ * return:			0 on success, -1 on error
+ * Note: 
+ */
+int fd_dump(int rfd, int wfd, void (*finish_cb)(int err, int rfd, int wfd, void *arg), void *arg);
 #endif

@@ -5,6 +5,7 @@
 #include <unistd.h>
 #include <common/dbg.h>
 #include <common/utils.h>
+#include <ctype.h>
 static inline void terminate(bool useExit3)
 {
 	/* Dump core if EF_DUMPCORE environment variable is defined and
@@ -37,7 +38,19 @@ static inline void validate_cls_args(int argc, char *argv[], int required, const
 		terminate(true);
 	}
 }
+#define printable(ch) (isprint((unsigned char) ch) ? ch : '#')
+
+static inline void usageError(const char *msg, int opt)
+{
+	if(msg != NULL)
+		fprintf(stderr, "%s (-%c)\n", msg, printable(opt));
+	terminate(true);
+}
+
 
 #define ClsArgToVal(stv,arg,out,argname) check(stv((arg),(out)) == 0, fprintf(stderr,"Invalid argument \"" argname "\": %s\n",(arg));terminate(true))
 #define ClsArgCheck(A,argname) check(A,fprintf(stderr,"Argument \"" argname "\" voilates Constraint: %s\n",#A);terminate(true))	 
+
+#define ClsOptArgToVal(stv,arg,out,opt) check(stv((arg),(out)) == 0, usageError("Invalid Option Argument", opt))
+#define ClsOptArgCheck(A,opt) check(A,fprintf(stderr,"Option Argument for (-%c) voilates Constraint: %s\n",printable(opt),#A);terminate(true))	 
 #endif

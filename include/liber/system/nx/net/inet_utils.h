@@ -45,17 +45,7 @@ char *peer_atos(int sockfd, char *addr_str, size_t addr_str_len);
 
 char *local_atos(int sockfd, char *addr_str, size_t addr_str_len);
 
-/**
- * fd_dump - stream data between two file descriptors, read data from first one and write data to the other
- *				until get EOF
- * @rfd:		the file descriptor from which data is read
- * @wfd:		the file descriptor to which data is write
- * @finish_cb:	function pointer to the callback function to invoke when all data is streamed or an error occured.
- * @arg:		argument pass to the callback function 
- * return:			0 on success, -1 on error
- * Note: 
- */
-int fd_dump(int rfd, int wfd, void (*finish_cb)(int err, int rfd, int wfd, void *arg), void *arg);
+
 
 /*--------------helpers for struct sockaddr---------------------------------------------------------*/
 //Returns: 0 if saddr is assigned successfully, -1 is error occurs. note: cannot be used for unix domain socket
