@@ -30,7 +30,7 @@ struct thread_pool
 	uint_t t_num_min;
 	uint_t t_num_max;
 	int timeout_sec;
-	uint_t t_num_curr;
+	uint_t t_num_curr;  	// total number of threads in all three lists
 	uint_t t_num_idle;
 
 	pthread_mutex_t pool_mtx;
@@ -40,9 +40,12 @@ struct thread_pool
 
 	pthread_attr_t thr_attr;
 
-	list_head active_list;
-	list_head idle_list;
-	list_head unjoined_list;
+	/*thread lists*/
+	list_head active_list;      // threads running jobs
+	list_head idle_list;		// idle threads waiting for new jobs
+	list_head unjoined_list;	// dead threads waiting for join
+	
+	/*job list*/
 	list_head job_list;
 };
 
@@ -216,7 +219,7 @@ int thr_pool_queue(thr_pool_t tp, void *(*job_fn)(void *, const thread_ent_t *),
 	 ERR_CLEAN_POP();
 	 (void)pthread_mutex_unlock(&tp->pool_mtx);
 	 
-	 (void)pthread_cond_signal(&tp->pool_workcv);
+	 (void)pthread_cond_broadcast(&tp->pool_workcv);
 	 TP_UNBLOCK_SIG();
 	 return 0;
 	 /*
@@ -383,7 +386,7 @@ static void *create_worker(void *arg)
 		free(jobp);
 		(void)(*job.job_fn)(job.arg,t);
 		pthread_cleanup_pop(1);
-		
+		(void)pthread_mutex_lock(&tp->pool_mtx);
 	}
 	pthread_cleanup_pop(1);
 	return t;
@@ -425,8 +428,12 @@ static void job_finish(thread_ent_t *t)
 	thr_pool_t tp = t->tp;
 	
 	(void)pthread_mutex_lock(&tp->pool_mtx);
-	(void)pthread_cond_signal(&tp->pool_waitcv);
 	list_del(&t->list_ent);
+	(void)pthread_mutex_unlock(&tp->pool_mtx);
+
+	(void)pthread_cond_signal(&tp->pool_waitcv);
+
+	
 }
 
 static inline void thread_idle(thread_ent_t *t)

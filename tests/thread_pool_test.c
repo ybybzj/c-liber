@@ -9,7 +9,7 @@ void *job(void *arg, const thread_ent_t *t)
 	int job_id = (long long)arg;
 	println("[Job %d] start...",job_id);
 	thread_ent_stat_print((thread_ent_t *)t);
-	sleep(1);
+	sleep((job_id % 10) + 1);
 	println("[Job %d] finish...",job_id);
 	return NULL;
 }
@@ -56,7 +56,7 @@ int main(int argc, char *argv[])
 	thr_pool_t tp = NULL;
 	thr_pool_init(&tp,(uint_t)t_num_min,(uint_t)t_num_max,timeout_sec,NULL);
 	int i = 0;
-	for(;i<100;i++)
+	for(;i<15000;i++)
 	{
 		thr_pool_queue(tp, job, (void *)((long long)i));
 	}
