@@ -178,9 +178,9 @@ static inline int set_fd(int rfd, int wfd,fd_set *rset, fd_set *wset, ring_buffe
 int fd_dump(int rfd, int wfd, void (*finish_cb)(int, int, int, void *), void *arg)
 {
 	
-	ring_buffer_t rbuf;
+	ring_buffer_t *rbuf = NULL;
     fd_set rset, wset;
-    check(ring_buffer_create(&rbuf,RBUF_LEN) != -1, return -1);
+    check((rbuf = ring_buffer_create(RBUF_LEN)) != NULL, return -1);
     int eof = 0;
     int rfd_flags, wfd_flags;
     check((rfd_flags = make_unblock(rfd)) != -1, goto onerr);
@@ -188,7 +188,7 @@ int fd_dump(int rfd, int wfd, void (*finish_cb)(int, int, int, void *), void *ar
     for(;;)
     {
     	errno = 0;
-    	int maxfd = set_fd(rfd, wfd, &rset, &wset, &rbuf,eof);
+    	int maxfd = set_fd(rfd, wfd, &rset, &wset, rbuf,eof);
     	// check(select(maxfd, &rset, &wset, NULL, NULL) != -1, goto onerr);
     	if(select(maxfd, &rset, &wset, NULL, NULL) < 0)
     	{
@@ -206,10 +206,10 @@ int fd_dump(int rfd, int wfd, void (*finish_cb)(int, int, int, void *), void *ar
 
     	if(FD_ISSET(rfd, &rset))
     	{
-    		int n = read(rfd, ring_buffer_write_pos(&rbuf), ring_buffer_free_space(&rbuf));
+    		int n = read(rfd, ring_buffer_write_pos(rbuf), ring_buffer_free_space(rbuf));
     		if(n > 0)
             {
-                ring_buffer_commit_write(&rbuf, n);
+                ring_buffer_commit_write(rbuf, n);
                 FD_SET(wfd,&wset);// data available write to server
             }else{
                 if(n == 0)
@@ -225,12 +225,12 @@ int fd_dump(int rfd, int wfd, void (*finish_cb)(int, int, int, void *), void *ar
             }
     	}
     	int data_count = 0;
-    	if(FD_ISSET(wfd, &wset) && (data_count = ring_buffer_data_count(&rbuf)))
+    	if(FD_ISSET(wfd, &wset) && (data_count = ring_buffer_data_count(rbuf)))
     	{
-    		int n = write(wfd, ring_buffer_read_pos(&rbuf), data_count);
+    		int n = write(wfd, ring_buffer_read_pos(rbuf), data_count);
     		if(n >= 0)
     		{
-    			ring_buffer_commit_read(&rbuf, n);
+    			ring_buffer_commit_read(rbuf, n);
     		}else
     		{
     			if(errno != EWOULDBLOCK || errno != EAGAIN)
@@ -241,9 +241,9 @@ int fd_dump(int rfd, int wfd, void (*finish_cb)(int, int, int, void *), void *ar
     		}
     	}
 
-    	if(eof && ring_buffer_data_count(&rbuf) == 0)
+    	if(eof && ring_buffer_data_count(rbuf) == 0)
         {
-        	ring_buffer_free(&rbuf);
+        	ring_buffer_free(rbuf);
         	if(finish_cb != NULL)
         		finish_cb(0, rfd, wfd, arg);    
         	break;
@@ -255,7 +255,7 @@ int fd_dump(int rfd, int wfd, void (*finish_cb)(int, int, int, void *), void *ar
     
     return 0;
 onerr:
-	ring_buffer_free(&rbuf);
+	ring_buffer_free(rbuf);
 	if(finish_cb != NULL)
         finish_cb(-1, rfd, wfd, arg);
     check(fcntl(rfd, F_SETFL, rfd_flags) != -1, return -1);

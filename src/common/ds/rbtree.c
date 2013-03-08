@@ -201,14 +201,19 @@ struct rb_node *rb_last(const struct rb_tree *tree)
 
 struct rb_node *rb_next(const struct rb_node *node)
 {
+	if(node == NULL) return NULL;
 	struct rb_node *next = node->rb_right;
 	if(next == NULL)
 	{
-		if(rb_is_lchild(node))
+		if(rb_is_root(node))
+			return NULL;
+		else if(rb_is_lchild(node))
+		{
 			return rb_parent(node);
+		}
 		else{
 			struct rb_node *n = rb_parent(node);
-			while(rb_is_rchild(n))
+			while(n != NULL && rb_is_rchild(n))
 				n = rb_parent(n);
 			return rb_is_root(n) ? NULL : rb_parent(n);
 		}
@@ -217,17 +222,20 @@ struct rb_node *rb_next(const struct rb_node *node)
 		return __rb_min(next);
 	
 }
+			
 
 struct rb_node *rb_prev(const struct rb_node *node)
 {
 	struct rb_node *prev = node->rb_left;
 	if(prev == NULL)
 	{
-		if(rb_is_rchild(node))
+		if(rb_is_root(node))
+			return NULL;
+		else if(rb_is_rchild(node))
 			return rb_parent(node);
 		else{
 			struct rb_node *n = rb_parent(node);
-			while(rb_is_lchild(n))
+			while(n != NULL && rb_is_lchild(n))
 				n = rb_parent(n);
 			return rb_is_root(n) ? NULL : rb_parent(n);
 		}

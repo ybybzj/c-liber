@@ -189,6 +189,8 @@ int thr_pool_queue(thr_pool_t tp, void *(*job_fn)(void *, const thread_ent_t *),
 	jobp->arg = arg;
 	INIT_LIST_HEAD(&jobp->list_ent);
 
+	
+
 	//modifying joblist
 	(void)pthread_mutex_lock(&tp->pool_mtx);
 	list_push(&jobp->list_ent,&tp->job_list);
@@ -203,15 +205,15 @@ int thr_pool_queue(thr_pool_t tp, void *(*job_fn)(void *, const thread_ent_t *),
 	 if(list_empty(&tp->idle_list) && tp->t_num_curr < tp->t_num_max && !list_empty(&tp->job_list))
 	 {
 	 	pthread_t tid;
-
 	 	//create thread info data
 	 	thread_ent_t *t = (thread_ent_t*)malloc(sizeof(thread_ent_t));
 	 	check(t != NULL, ret = ENOMEM; goto onerr);
 	 	ERR_CLEAN_PUSH(2,t,t);
 	 	t->tp = tp;
 	 	INIT_LIST_HEAD(&t->list_ent);
-
+	 
 	 	check_t(ret = pthread_create(&tid,NULL/*attr*/,create_worker,t), goto onerr);
+	 
 	 	ERR_CLEAN_POP();
 	 	tp->t_num_curr++;
 	 }
@@ -221,6 +223,7 @@ int thr_pool_queue(thr_pool_t tp, void *(*job_fn)(void *, const thread_ent_t *),
 	 
 	 (void)pthread_cond_broadcast(&tp->pool_workcv);
 	 TP_UNBLOCK_SIG();
+	
 	 return 0;
 	 /*
 	 * clean up on error 

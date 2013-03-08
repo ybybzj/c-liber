@@ -1,18 +1,8 @@
 #ifndef __RING_BUFFER_H__
 #define __RING_BUFFER_H__
-typedef struct ring_buffer
-{
-	/*pointer to underlying buffer*/
-	void *buf;  
-	/*size of underlying buffer(in bytes)*/
-	unsigned long size;
+typedef struct ring_buffer ring_buffer_t;
 
-	/*both are byte offset*/
-	unsigned long write_offset; 
-	unsigned long read_offset;
-}ring_buffer_t;
-
-int ring_buffer_create(ring_buffer_t *rbuf, unsigned long size);
+ring_buffer_t *ring_buffer_create(unsigned long size);
 
 int ring_buffer_free(ring_buffer_t *rbuf);
 

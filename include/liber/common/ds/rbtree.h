@@ -32,9 +32,9 @@ struct rb_tree {
 #define RB_EMPTY_TREE	(struct rb_tree) { NULL, }
 #define	rb_entry(ptr, type, member) ((type *)((char *)(ptr)-(unsigned long)(&((type *)0)->member)))
 #define rb_is_leaf(rb) ((rb) == NULL)
-#define rb_is_root(rb) (!rb_is_leaf(rb) && rb_parent(rb) == NULL)
-#define rb_is_lchild(rb) (!rb_is_root(rb) && rb_parent(rb)->rb_left == (rb))
-#define rb_is_rchild(rb) (!rb_is_root(rb) && rb_parent(rb)->rb_right == (rb))
+#define rb_is_root(rb) (!rb_is_leaf(rb) && (rb_parent(rb) == NULL))
+#define rb_is_lchild(rb) ( (rb) != NULL && !rb_is_root(rb) && (rb_parent(rb)->rb_left == (rb)))
+#define rb_is_rchild(rb) ((rb) != NULL && !rb_is_root(rb) && (rb_parent(rb)->rb_right == (rb)))
 #define RB_IS_EMPTY_TREE(tree)  ((tree)->rb_root == NULL)
 
 /* 'empty' nodes are nodes that are known not to be inserted in an rbtree */

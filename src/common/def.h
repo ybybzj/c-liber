@@ -22,6 +22,9 @@ typedef uint8_t bit_t;
 #define RSIZE_MAX (SIZE_MAX>>1)
 #endif
 
+#define MALLOC(n,type) ((type*)malloc((n)*sizeof(type)))
+#define CALLOC(n,type) ((type*)calloc((n),sizeof(type)))
+
 #define memberp_to_structp(mptr, stype, mname) \
 	((stype *)((byte *)(mptr)-offsetof((stype),(mname)))
 #endif

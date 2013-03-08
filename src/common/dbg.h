@@ -24,6 +24,7 @@
 
 #define check_err(A, actions, M, ...) if(!(A)){ print_err(M, ##__VA_ARGS__); errno = 0; actions;}
 
+#define check_mem(A, actions, M) check_err(A, actions, "memory error: %s", M)
 #define sentinel(actions, M, ...) {print_err(M, ##__VA_ARGS__); errno = 0; actions;}
 
 #define check_debug(A, actions, M, ...) if(!(A)){ debug(M, ##__VA_ARGS__); errno = 0; actions;}
