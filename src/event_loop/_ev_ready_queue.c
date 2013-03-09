@@ -158,7 +158,7 @@ static void *event_handler(void *arg, const thread_ent_t *t_ent UNUSED)
 	event ev = ri->ev;
 	ev_monitor *monitor = ri->monitor;
 	ev.events = ev_ready_item_dispatch(ri);
-	// prt_evs(ev.events,"[ev_ready_item_dispatched %d]",ev.fd);
+
 	if(ev.events != 0)
 		check(ev_monitor_ctl(monitor, EV_CTL_MOD, ev) != -1, ev_ready_item_free(ri); return NULL);
 	ev_ready_item_free(ri);

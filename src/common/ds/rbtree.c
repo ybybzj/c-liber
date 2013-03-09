@@ -258,8 +258,10 @@ static inline void rb_transplant(struct rb_tree *tree, struct rb_node *u, struct
 		rb_set_parent(v,rb_parent(u));
 }
 //depict on p.329 in CLRS's book
-static void rb_delete_fixup(struct rb_tree *tree, struct rb_node *pnode, struct rb_node *node)
+static void rb_delete_fixup(struct rb_tree *tree, struct rb_node *pnode, struct rb_node *node, int is_right)
 {
+	
+	
 	if(pnode == NULL)
 	{
 		if(node != NULL)
@@ -270,21 +272,31 @@ static void rb_delete_fixup(struct rb_tree *tree, struct rb_node *pnode, struct 
 	{
 		struct rb_node *p = rb_is_leaf(node) ? pnode : rb_parent(node);
 
-		if(node == p->rb_left)
+		int is_left = rb_is_leaf(node) ? !is_right : rb_is_lchild(node);
+		if(is_left)
 		{
+
 			struct rb_node *w = p->rb_right;
+		
+			if(rb_is_leaf(w))
+			{
+				node = tree->rb_root;
+				break;
+			}
 			if(rb_is_red(w))							//case 1
 			{
 				rb_set_color(w,RB_BLACK);
 				rb_set_color(p,RB_RED);
 				rb_left_rotate(tree,p);
 				w = p->rb_right;						//fall through, continue to check case 2 or 4
+			
 			}
 
 			if(rb_is_black(w->rb_left) && rb_is_black(w->rb_right)) // case 2
 			{
 				rb_set_color(w,RB_RED);
 				node = p;
+				
 			}else 												
 			{
 				if(rb_is_black(w->rb_right))			//case 3
@@ -292,7 +304,8 @@ static void rb_delete_fixup(struct rb_tree *tree, struct rb_node *pnode, struct 
 					rb_set_color(w,RB_RED);
 					rb_set_color(w->rb_left,RB_BLACK);
 					rb_right_rotate(tree,w);
-					w = w->rb_left;                     //fall in to case 4
+					w = rb_parent(w);                     //fall in to case 4
+					
 				}
 				rb_set_color(w,rb_color(p));
 				rb_set_color(p,RB_BLACK);
@@ -303,8 +316,14 @@ static void rb_delete_fixup(struct rb_tree *tree, struct rb_node *pnode, struct 
 		}else
 		{
 			struct rb_node *w = p->rb_left;
+			if(rb_is_leaf(w))
+			{
+				node = tree->rb_root;
+				break;
+			}
 			if(rb_is_red(w))							//case 1
 			{
+				
 				rb_set_color(w,RB_BLACK);
 				rb_set_color(p,RB_RED);
 				rb_right_rotate(tree,p);
@@ -313,16 +332,18 @@ static void rb_delete_fixup(struct rb_tree *tree, struct rb_node *pnode, struct 
 
 			if(rb_is_black(w->rb_left) && rb_is_black(w->rb_right)) // case 2
 			{
+				
 				rb_set_color(w,RB_RED);
 				node = p;
 			}else 												
 			{
 				if(rb_is_black(w->rb_left))			//case 3
 				{
+					
 					rb_set_color(w,RB_RED);
 					rb_set_color(w->rb_right,RB_BLACK);
 					rb_left_rotate(tree,w);
-					w = w->rb_right;                     //fall in to case 4
+					w = rb_parent(w);                     //fall in to case 4
 				}
 				rb_set_color(w,rb_color(p));
 				rb_set_color(p,RB_BLACK);
@@ -342,20 +363,22 @@ void rb_erase(struct rb_tree *tree, struct rb_node *node)
 {
 	if(tree == NULL || RB_IS_EMPTY_TREE(tree) || node == NULL)
 		return;
+	
 	struct rb_node *del_node, *pdel_node, *cld_node;
-	int del_color;
+	int del_color, is_right;
 	del_node = node;
 	del_color = rb_color(del_node);
 	pdel_node = rb_parent(del_node);
-	
 
 	if(del_node->rb_left == NULL)
 	{
 		cld_node = del_node->rb_right;
+		is_right = rb_is_rchild(del_node);
 		rb_transplant(tree,del_node,del_node->rb_right);
 	}else if(del_node->rb_right == NULL)
 	{
 		cld_node = del_node->rb_left;
+		is_right = rb_is_rchild(del_node);
 		rb_transplant(tree, del_node, del_node->rb_left);
 	}else
 	{
@@ -363,6 +386,7 @@ void rb_erase(struct rb_tree *tree, struct rb_node *node)
 		del_color = rb_color(del_node);
 		pdel_node = rb_parent(del_node);
 		cld_node = del_node->rb_right;
+		is_right = rb_is_rchild(del_node);
 		if(pdel_node == node)
 		{
 			pdel_node = del_node;
@@ -379,7 +403,7 @@ void rb_erase(struct rb_tree *tree, struct rb_node *node)
 	}
 
 	if(del_color == RB_BLACK)
-		rb_delete_fixup(tree, pdel_node,cld_node);
+		rb_delete_fixup(tree, pdel_node,cld_node, is_right);
 
 
 	RB_MAKE_ORPHAN(node);

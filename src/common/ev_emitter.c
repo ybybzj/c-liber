@@ -4,7 +4,7 @@
 typedef struct 
 {
 	int once;
-	ev_callback cb;
+	emitter_callback cb;
 }ev_cb_s;
 
 
@@ -20,7 +20,7 @@ int ev_emitter_init(ev_emitter_t *emitter)
 	check(tst_init(&emitter->ev_cb_map) != -1,return -1);
 	return 0;
 }
-int ev_emitter_on(ev_emitter_t *emitter, const char *ev, ev_callback cb, ev_callback *old_cb)
+int ev_emitter_on(ev_emitter_t *emitter, const char *ev, emitter_callback cb, emitter_callback *old_cb)
 {
 	check(emitter != NULL && ev != NULL, errno = EINVAL;return -1);
 	ev_cb_s *cbsp;
@@ -40,7 +40,7 @@ int ev_emitter_on(ev_emitter_t *emitter, const char *ev, ev_callback cb, ev_call
 	return 0;
 }
 
-int ev_emitter_once(ev_emitter_t *emitter, const char *ev, ev_callback cb, ev_callback *old_cb)
+int ev_emitter_once(ev_emitter_t *emitter, const char *ev, emitter_callback cb, emitter_callback *old_cb)
 {
 	check(emitter != NULL && ev != NULL, errno = EINVAL;return -1);
 	ev_cb_s *cbsp;
@@ -59,7 +59,7 @@ int ev_emitter_once(ev_emitter_t *emitter, const char *ev, ev_callback cb, ev_ca
 	
 	return 0;
 }
-int ev_emitter_off(ev_emitter_t *emitter, const char *ev, ev_callback *cb)
+int ev_emitter_off(ev_emitter_t *emitter, const char *ev, emitter_callback *cb)
 {
 	check(emitter != NULL && ev != NULL, errno = EINVAL;return -1);
 	ev_cb_s *cbsp;

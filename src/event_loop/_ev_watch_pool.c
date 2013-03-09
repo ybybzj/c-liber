@@ -56,13 +56,13 @@ int ev_watch_pool_add(ev_watch_pool *wp, event ev, va_list argList)
 
 	(void)ev_watch_item_assign_cb(w, argList);
 
-	check(ev_monitor_core_ctl(wp->mcore, 'a', ev.fd, ev) != -1, ev_watch_item_free(w); return -1);
+	check(ev_monitor_core_add(wp->mcore, w) != -1, ev_watch_item_free(w); return -1);
 
 	int ret = 0;
 	(void)pthread_mutex_lock(&wp->mtx);
 	check(ev_watch_tree_add(&wp->watch_tree, w) != -1,
+		ev_monitor_core_del(wp->mcore, w); 
 		ev_watch_item_free(w);
-		ev_monitor_core_ctl(wp->mcore, 'd', ev.fd, ev); 
 		ret = -1);
 	(void)pthread_mutex_unlock(&wp->mtx);
 	return ret;
@@ -72,6 +72,7 @@ int ev_watch_pool_del(ev_watch_pool *wp, int fd)
 	check(wp != NULL, errno=EINVAL; return -1);
 	int ret = 0;
 	ev_watch_item *w;
+
 	(void)pthread_mutex_lock(&wp->mtx);
 	w = ev_watch_tree_delete(&wp->watch_tree, fd);
 	(void)pthread_mutex_unlock(&wp->mtx);
@@ -80,9 +81,9 @@ int ev_watch_pool_del(ev_watch_pool *wp, int fd)
 	{
 		if(!(w->ev.events & EV_IGN))
 		{
-			check(ev_monitor_core_ctl(wp->mcore, 'd', fd, w->ev) != -1, ret = -1);
+			check(ev_monitor_core_del(wp->mcore, w) != -1, ret = -1);
 		}
-	
+		
 		ev_watch_item_free(w);
 	}
 	return ret;
@@ -104,11 +105,11 @@ int ev_watch_pool_mod(ev_watch_pool *wp, event ev, va_list argList)
 	{
 		if(!(w->ev.events & EV_IGN))
 		{
-			check(ev_monitor_core_ctl(wp->mcore, 'd', ev.fd, w->ev) != -1, return -1);
+			check(ev_monitor_core_del(wp->mcore, w) != -1, return -1);
 		}
 	}else{
-		// println("ev_monitor_core_ctl m");
-		check(ev_monitor_core_ctl(wp->mcore, 'm', ev.fd, ev) != -1, return -1);
+	
+		check(ev_monitor_core_mod(wp->mcore, w, ev) != -1, return -1);
 		
 	}
 

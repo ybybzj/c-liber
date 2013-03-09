@@ -1,6 +1,7 @@
 #ifndef __EVENT_LOOP_H__
 #define __EVENT_LOOP_H__
 #include <stdint.h>
+#include <string.h>
 
 
 /*-------------public data type--------------------*/
@@ -11,6 +12,7 @@ typedef uint32_t ev_set;
 enum ev_type{
 	EV_READ = (1<<0),
 	EV_WRITE = (1<<1),
+	EV_TIMEOUT = (1<<2),
 	EV_ERREV = (1<<(_EV_EVENT_MAX - 1)),
 	//special event type, which cannot be received by ev_callback
 	EV_IGN = (1<<(_EV_EVENT_MAX + 1)),
@@ -25,6 +27,7 @@ typedef struct _ev_monitor ev_monitor;
 typedef struct _event {
 	int fd;
 	int priority;
+	unsigned int time_delay;                    //unit: sec 0 turn off timeout
 	ev_set events;
 	union ev_data{
 		long i;
@@ -33,7 +36,7 @@ typedef struct _event {
 	}data; 
 	void (*ev_data_free)(void *);
 } event;
- 
+#define ev_clear_event(ev) memset((ev), 0, sizeof(event));
 
 typedef ev_set (*ev_callback)(event, ev_monitor*);
 typedef struct{
@@ -63,7 +66,7 @@ void ev_loop_stop(ev_monitor *monitor);
 
 void ev_monitor_free(ev_monitor *monitor);
 
-// #define prt_evs(e,fmt, ...) printf(fmt ": %s%s%s,%s%s\n", ##__VA_ARGS__, e&EV_READ ? "EV_READ":"", e&EV_WRITE ? "EV_WRITE":"", e&EV_ERREV ? "EV_ERREV":"",
-// 		e&EV_IGN ? "EV_IGN":"", e&EV_FINISHED ? "EV_FINISHED":"");
+#define prt_evs(e,fmt, ...) printf(fmt ": %s%s%s%s,%s%s\n", ##__VA_ARGS__, e&EV_TIMEOUT ? "EV_TIMEOUT":"", \
+e&EV_READ ? "EV_READ":"", e&EV_WRITE ? "EV_WRITE":"", e&EV_ERREV ? "EV_ERREV":"",e&EV_IGN ? "EV_IGN":"", e&EV_FINISHED ? "EV_FINISHED":"");
 
 #endif

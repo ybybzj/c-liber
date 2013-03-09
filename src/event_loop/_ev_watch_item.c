@@ -19,8 +19,10 @@ void ev_watch_item_free(ev_watch_item *w)
 {
 	if(w == NULL)
 		return;
+	// println("ev_watch_item_free b: %p", w);
 	if((w->ev).ev_data_free != NULL)
 		(w->ev).ev_data_free((w->ev).data.ptr);
+	// println("ev_watch_item_free a: %p", w);
 	free(w);
 }
 
@@ -113,15 +115,15 @@ ev_watch_item *ev_watch_tree_delete(struct rb_tree *tree, int fd)
 {
 	check(tree != NULL, return NULL);
 	ev_watch_item *w = ev_watch_tree_search(tree, fd);
-	println("ev_watch_delete w: %p fd: %d", w, fd);
 	if(w != NULL)
 	{
 		struct rb_node *del_node = &w->rb;
 		rb_erase(tree, del_node);
 	}
-
 	return w;
 }
+		
+			
 void ev_watch_tree_node_free(struct rb_node *node)
 {
 	if(node != NULL)

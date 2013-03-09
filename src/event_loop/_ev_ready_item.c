@@ -34,7 +34,7 @@ ev_set ev_ready_item_dispatch(ev_ready_item *ri)
 	ev_callback cb_list[_EV_EVENT_MAX];
 
 	ev_watch_item_cb_copy(ri->w, cb_list, _EV_EVENT_MAX);
-
+	
 	ev_monitor *monitor = ri->monitor;
 	if(events&EV_ERREV)
 	{
@@ -52,6 +52,7 @@ ev_set ev_ready_item_dispatch(ev_ready_item *ri)
 			if((events&0x01) && cb)
 			{
 				ev_set ev = cb(ri->ev,monitor);
+			
 				if(!(ev&EV_FINISHED))
 					ret_ev |= ev;
 			}
