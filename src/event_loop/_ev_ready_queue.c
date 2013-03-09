@@ -110,11 +110,6 @@ int ev_ready_queue_equeue(ev_ready_queue *rq, int fd, ev_set events)
 	check(rq != NULL, errno = EINVAL; return -1);
 	ev_watch_item *w = ev_watch_pool_search(rq->wpool, fd);
 
-	// int i;
-	// for(i = 0; i<_EV_EVENT_MAX; i++ )
-	// {
-	// 	printf("[%d]cb(%p),",i,w->cb_list[i]);
-	// }
 
 	check(w != NULL ,return -1);
 	ev_ready_item *ri = ev_ready_item_create(rq->monitor, w, events);

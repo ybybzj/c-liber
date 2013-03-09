@@ -114,6 +114,10 @@ int epoll_wait_events(struct _ev_monitor_handle *h, ev_handle_event *he_list, si
 	{
 		ev_watch_item *w = (ev_watch_item *)evlist[i].data.ptr;
 		he_list[i].events = to_custom_events(evlist[i].events, w->ev.events);
+		if(he_list[i].events&EV_TIMEOUT)
+		{
+			check(timer_stop(&w->ev) != -1, return -1);
+		}
 		he_list[i].fd = w->ev.fd;
  	}
 	return nready;

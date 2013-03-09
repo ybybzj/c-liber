@@ -148,8 +148,9 @@ int ev_loop_run(ev_monitor *monitor ,int flag)
 
 		if(nready <= 0)
 		{
-			if(nready == 0 && aq_empty)
-			{
+			if(nready == 0)
+			{	
+				if(aq_empty)
 				continue;	
 			}else
 			{

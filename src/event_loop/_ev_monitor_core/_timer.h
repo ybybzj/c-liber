@@ -4,4 +4,6 @@
 
 int timer_prepare(event *ev);
 int timer_start(event *ev);
+
+int timer_stop(event *ev);
 #endif
