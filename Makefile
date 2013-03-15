@@ -91,14 +91,14 @@ TEST_RUNS = $(filter-out $(TEST_SKIPFILES),$(TESTS))
 test:  test-build
 	@echo "Running unit tests:"
 	@for t in $(TEST_RUNS); do \
-		./$$t -s 2>/dev/null; \
+		$$t -s 2>/dev/null; \
 	done
 	@echo ""
 
 test-v: test-build
 	@echo "Running unit tests:"
 	@for t in $(TEST_RUNS); do \
-		./$$t; \
+		$$t; \
 	done
 	@echo ""
 
