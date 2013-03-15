@@ -1,29 +1,34 @@
 #### --Section-- global configuration  ####
+CUR_DIR = $(shell pwd)
 TargetName = main
 CC = c99
 CFLAGS = -g -O3 -Wall -Wextra  -rdynamic -DNDEBUG $(DEFS) $(OPTFLAGS) -I$(SRCDIR) $(INCFLAGS)
 DEV_CFLAGS = -g -Wall -Wextra  $(DEFS) $(OPTFLAGS) -I$(SRCDIR) $(INCFLAGS)
-TEST_CFLAGS = -g -Wall -Wextra  $(DEFS) $(OPTFLAGS) $(TESTFLAGS) -I$(SRCDIR) $(INCFLAGS)
+#TEST_CFLAGS = -g -Wall -Wextra  $(DEFS) $(OPTFLAGS) $(TESTFLAGS) -I$(SRCDIR) $(INCFLAGS)
 LDLIBS = $(LIBDIRS) $(LIBS)
 
 
-SRCDIR = src
-INCDIR = include
+SRCDIR = $(CUR_DIR)/src
+INCDIR = $(CUR_DIR)/include
 SOURCES = $(shell find $(SRCDIR)/ -name "*.c" -print)
 OBJECTS = $(patsubst %.c,%.o,$(SOURCES))
 
 
-BUILD = build/release
-BUILD_DEV = build/debug
+BUILD = $(CUR_DIR)/build/release
+BUILD_DEV = $(CUR_DIR)/build/debug
 #if '*/main.c' is included in src directory, an executable program is produced.
 IS_OUTPUT_BIN = $(if $(findstring main.c,$(notdir $(SOURCES))),yes,)
 TARGET_A = lib/lib$(TargetName).a
 TARGET_SO = $(patsubst %.a,%.so,$(TARGET_A))
 TARGET_BIN = bin/$(TargetName)
 
-TESTDIR = tests
+TESTDIR = $(CUR_DIR)/tests
 TEST_SRC = $(shell find $(TESTDIR)/ -name "*.c" -print)
 TESTS = $(patsubst %.c,%,$(TEST_SRC))
+
+EXAMPLE_DIR = $(CUR_DIR)/examples
+EXAMPLE_SRC = $(shell find $(EXAMPLE_DIR)/ -name "*.c" -print)
+EXAMPLES = $(patsubst %.c,%,$(EXAMPLE_SRC))
 #### --Section-- user defined configueration ####
 include ./cfg.mk
 #### --Section-- target build ####
@@ -85,7 +90,7 @@ test:  test-build
 		./$$t -s 2>/dev/null; \
 	done
 	@echo ""
-	
+
 test-v: test-build
 	@echo "Running unit tests:"
 	@for t in $(TEST_RUNS); do \
@@ -100,6 +105,18 @@ $(TESTS): dev $(TEST_SRC)
 $(TESTDIR)/%: $(TESTDIR)/%.c
 	$(CC) $(CFLAGS) -I$(TESTDIR) $< $(BUILD_DEV)/$(TARGET_SO) $(TESTLIBS) -o $@
 
+#### --Section-- Example ####
+.PHONY: example
+# TEST_SKIPFILES = $(patsubst %,$(TESTDIR)/%,$(TEST_SKIPS))
+# TEST_RUNS = $(filter-out $(TEST_SKIPFILES),$(TESTS))
+
+example: $(EXAMPLES)
+
+$(EXAMPLES): CFLAGS = $(DEV_CFLAGS)
+$(EXAMPLES): dev $(EXAMPLE_SRC)
+$(EXAMPLE_DIR)/%: $(EXAMPLE_DIR)/%.c
+	$(CC) $(CFLAGS) -I$(EXAMPLE_DIR) $< $(BUILD_DEV)/$(TARGET_SO) $(EXAMPLE_LIBS) -o $@
+
 #### --Section-- Automatically generated  headers dependencies ####
 %.d: %.c
 	@set -e
@@ -110,12 +127,17 @@ $(TESTDIR)/%.d: $(TESTDIR)/%.c
 	@set -e
 	@rm -f $@
 	@$(CC) -MM $(CFLAGS) -I$(TESTDIR) $< | sed 's,^.*\.o[ :]*,$(basename $<) $@ : ,g' > $@
--include $(SOURCES:.c=.d) $(TEST_SRC:.c=.d)
 
+
+$(EXAMPLE_DIR)/%.d: $(EXAMPLE_DIR)/%.c
+	@set -e
+	@rm -f $@
+	@$(CC) -MM $(CFLAGS) -I$(EXAMPLE_DIR) $< | sed 's,^.*\.o[ :]*,$(basename $<) $@ : ,g' > $@
+-include $(SOURCES:.c=.d) $(TEST_SRC:.c=.d) $(EXAMPLE_SRC:.c=.d)
 
 #### --Section-- Export include files ####
 .PHONY: incl
-# header file names starting with an underscore like "_*.h" are not exported 
+# header file names starting with an underscore like "_*.h" are not exported
 SRC_PRIVATE_H = $(shell find $(SRCDIR)/ -name "_*.h" -print)
 SRC_HFILES = $(filter-out $(SRC_PRIVATE_H),$(shell find $(SRCDIR)/ -name "*.h" -print))
 INC_HFILES = $(foreach h,$(SRC_HFILES),$(patsubst $(SRCDIR)/%,%,$(h)))
@@ -130,7 +152,11 @@ incl: $(INCFILES)
 
 
 #### --Section-- Phony target ####
-.PHONY: clean 
+.PHONY: clean
 
 clean:
-	rm -rf build $(INCDIR) $(OBJECTS) $(SOURCES:.c=.d) $(TEST_SRC:.c=.d) $(TESTS)
+	rm -rf $(CUR_DIR)/build $(INCDIR) $(OBJECTS) $(SOURCES:.c=.d) $(TEST_SRC:.c=.d) $(TESTS) $(EXAMPLE_SRC:.c=.d) $(EXAMPLES)
+
+.PHONY: pwd
+pwd:
+	@echo $(shell pwd)

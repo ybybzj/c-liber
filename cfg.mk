@@ -7,7 +7,7 @@ TargetName = liber
 #=========================#
 # Source code directory   #
 #=========================#
-#SRCDIR = 
+#SRCDIR =
 
 #=========================#
 # Export directory of     #
@@ -19,12 +19,12 @@ INCDIR = include/liber
 # Include flags for       #
 # compilation and link    #
 #=========================#
-#INCFLAGS = 
+#INCFLAGS =
 
 #=========================#
 # Extra Define macros     #
 #=========================#
-#DEFS = 
+#DEFS =
 
 #=========================#
 # Extra CFLAGS options    #
@@ -41,12 +41,17 @@ OPTFLAGS = -pthread
 #=========================#
 LIBS = -lrt
 
+#====================================#
+# Flags for example lib dependencies #
+#====================================#
+#EXAMPLE_LIBS =
+
 #================================#
 # Flags for test lib dependencies#
 #================================#
-#TESTLIBS = 
+#TESTLIBS =
 
 #=========================#
 # Names of skipped tests  #
 #=========================#
-#TEST_SKIPS = 
+#TEST_SKIPS =
