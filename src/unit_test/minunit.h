@@ -3,6 +3,7 @@
 #define __MINUNIT_H__
 
 #include <common/dbg.h>
+#include <common/safestr.h>
 typedef void *(*testcase_startup)(void);
 typedef void (*testcase_teardown)(void *);
 typedef void (*testsuite_setup)(void);
@@ -48,7 +49,8 @@ return ts;}
 	if(argc == 2){ \
 		showDetail = false; \
 	} \
-	println("\n<==== Running Tests: "cls_s("%s",cls_Bold;cls_hYellow), argv[0]); \
+	char *test_name = strrchr(argv[0], '/');\
+	println("\n<==== Running Tests: "cls_s("%s",cls_Bold;cls_hYellow), test_name != NULL ? test_name + 1: ""); \
 	Test_suite result = testAll(showDetail); \
 	if(result.isPassed) { \
 		println("====> Test Result: Total " cls_s("%d",cls_hYellow) " tests, " cls_s("All Passed",cls_hGreen),result.total); \
