@@ -2,10 +2,14 @@
 CUR_DIR = $(shell pwd)
 TargetName = main
 CC = c99
+
+DEPS_DIR = $(CUR_DIR)/deps
+DEPLIBS = $(shell find $(DEPS_DIR)/ -name "*.so" -print)
+
 CFLAGS = -g -O3 -Wall -Wextra  -rdynamic -DNDEBUG $(DEFS) $(OPTFLAGS) -I$(SRCDIR) $(INCFLAGS)
 DEV_CFLAGS = -g -Wall -Wextra  $(DEFS) $(OPTFLAGS) -I$(SRCDIR) $(INCFLAGS)
 #TEST_CFLAGS = -g -Wall -Wextra  $(DEFS) $(OPTFLAGS) $(TESTFLAGS) -I$(SRCDIR) $(INCFLAGS)
-LDLIBS = $(LIBDIRS) $(LIBS)
+LDLIBS = $(DEPLIBS) $(LIBS)
 
 
 SRCDIR = $(CUR_DIR)/src
@@ -157,6 +161,4 @@ incl: $(INCFILES)
 clean:
 	rm -rf $(CUR_DIR)/build $(INCDIR) $(OBJECTS) $(SOURCES:.c=.d) $(TEST_SRC:.c=.d) $(TESTS) $(EXAMPLE_SRC:.c=.d) $(EXAMPLES)
 
-.PHONY: pwd
-pwd:
-	@echo $(shell pwd)
+
