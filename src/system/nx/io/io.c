@@ -1,3 +1,4 @@
+#define _GNU_SOURCE
 #include "io.h"
 #include "ring_buffer.h"
 #include "../common.h"
@@ -261,4 +262,21 @@ onerr:
     check(fcntl(rfd, F_SETFL, rfd_flags) != -1, return -1);
     check(fcntl(wfd, F_SETFL, wfd_flags) != -1, return -1);   
 	return -1;
+}
+
+fd_type_t get_fd_type(int fd)
+{
+	struct stat fs;
+	check(fstat(fd, &fs) != -1, return -1);
+	switch (fs.st_mode & S_IFMT) {
+		case S_IFREG: return FT_REG;
+		case S_IFDIR: return FT_DIR;
+		case S_IFCHR: return FT_CHR;
+		case S_IFBLK:  return FT_BLK;
+		case S_IFLNK:  return FT_LNK;
+		case S_IFIFO:  return FT_FIFO;
+		case S_IFSOCK: return FT_SOCK;
+		default:
+		return -1;
+	}
 }
