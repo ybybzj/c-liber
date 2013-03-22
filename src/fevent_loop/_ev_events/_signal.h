@@ -8,5 +8,4 @@ int add_signal_ev( ev_monitor *monitor,
 					void *arg,					// argument passed to callback
 					void (*arg_free)(void*));	// argument free function
 
-void detach_signal(int sig);	// donnot monitor signal sig
 #endif
