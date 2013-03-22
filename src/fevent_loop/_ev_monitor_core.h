@@ -11,8 +11,7 @@ void ev_monitor_core_free(ev_monitor_core *);
 
 int ev_monitor_core_add(ev_monitor_core *mcore,  ev_watch_item *w);
 int ev_monitor_core_del(ev_monitor_core *mcore,  ev_watch_item *w);
-int ev_monitor_core_mod(ev_monitor_core *mcore,  ev_watch_item *w, event ev);
+int ev_monitor_core_mod(ev_monitor_core *mcore,  ev_watch_item *w, fevent ev);
 
-int ev_monitor_core_event_prepare(event *ev);
 int ev_monitor_core_wait(ev_monitor_core *mcore, ev_ready_queue *rq, int timeout);
 #endif

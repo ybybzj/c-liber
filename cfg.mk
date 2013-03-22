@@ -31,10 +31,6 @@ INCDIR = include/liber
 #=========================#
 OPTFLAGS = -pthread
 
-#===========================#
-# Flags for lib Directories #
-#===========================#
-#LIBDIRS = -Wl,-rpath,deps -Ldeps
 
 #=========================#
 # Lib flags               #

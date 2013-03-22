@@ -1,5 +1,5 @@
 #define _GNU_SOURCE
-
+#include <common/clsclr.h>
 #include <system/nx.h>
 #include <system/nx/pthread_pool.h>
 #include <signal.h>
@@ -7,10 +7,10 @@
 void *job(void *arg, const thread_ent_t *t)
 {
 	int job_id = (long long)arg;
-	println("[Job %d] start...",job_id);
+	println(cls_s("[Job %d] start...",cls_Green),job_id);
 	thread_ent_stat_print((thread_ent_t *)t);
-	sleep((job_id % 10) + 1);
-	println("[Job %d] finish...",job_id);
+	// sleep((job_id % 10) + 1);
+	println(cls_s("[Job %d] finish...",cls_Green),job_id);
 	return NULL;
 }
 
@@ -20,7 +20,7 @@ void handler(int sig)
 }
 int main(int argc, char *argv[])
 {
-	int t_num_min,t_num_max,timeout_sec; 
+	int t_num_min,t_num_max,timeout_sec;
 	validate_cls_args(argc, argv, 1, "[thread-num-min thread-num-max timeout-sec]");
 	if(argc > 1)
 	{
@@ -51,19 +51,19 @@ int main(int argc, char *argv[])
 	sa.sa_handler = handler;
 	sigfillset(&fulsigset);
 	sigprocmask(SIG_SETMASK,&fulsigset,&origset);
-	sigaction(SIGINT,&sa,NULL); 
+	sigaction(SIGINT,&sa,NULL);
 	sigprocmask(SIG_SETMASK,&origset,NULL);
 	thr_pool_t tp = NULL;
 	thr_pool_init(&tp,(uint_t)t_num_min,(uint_t)t_num_max,timeout_sec,NULL);
 	int i = 0;
-	for(;i<15000;i++)
+	for(;i<150;i++)
 	{
 		thr_pool_queue(tp, job, (void *)((long long)i));
 	}
-	
+
 	// thr_pool_stat_print(tp);
-	thr_pool_wait(tp);
-	// thr_pool_stat_print(tp);
+	thr_pool_cancel(tp);
+	thr_pool_stat_print(tp);
 	thr_pool_destroy(&tp);
 	exit_s(true);
 }

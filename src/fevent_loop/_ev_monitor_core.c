@@ -19,10 +19,8 @@ struct _ev_monitor_core
 
 #ifdef EV_USE_EPOLL
 #include "_ev_monitor_core/_epoll.h"
-#include "_ev_monitor_core/_timer.h"
 #define ev_get_monitor_handle() epoll_get_monitor_handle()
 #define ev_free_monitor_handle(h) epoll_free_monitor_handle((h))
-#define ev_monitor_core_timer_prepare(e) timer_prepare((e))
 #define ev_monitor_handle_add(h,w) epoll_add((h), (w))
 #define ev_monitor_handle_mod(h,w,e) epoll_mod((h), (w), (e))
 #define ev_monitor_handle_del(h,w) epoll_del((h), (w))
@@ -50,18 +48,9 @@ void ev_monitor_core_free(ev_monitor_core *mcore)
 	}
 }
 
-int ev_monitor_core_event_prepare(event *ev)
-{
-	check(ev != NULL, return -1);
-	if(ev->events&EV_TIMEOUT)
-		return ev_monitor_core_timer_prepare(ev);
-	return 0;
-}
-
 int ev_monitor_core_add(ev_monitor_core *mcore,  ev_watch_item *w)
 {
 	check(mcore != NULL, return -1);
-	check(ev_monitor_core_event_prepare(&w->ev) != -1, return -1);
 	return ev_monitor_handle_add(mcore->handle, w);
 }
 
@@ -71,7 +60,7 @@ int ev_monitor_core_del(ev_monitor_core *mcore,  ev_watch_item *w)
 	return ev_monitor_handle_del(mcore->handle, w);
 }
 
-int ev_monitor_core_mod(ev_monitor_core *mcore,  ev_watch_item *w, event ev)
+int ev_monitor_core_mod(ev_monitor_core *mcore,  ev_watch_item *w, fevent ev)
 {
 	check(mcore != NULL, return -1);
 	return ev_monitor_handle_mod(mcore->handle, w, ev);
@@ -81,7 +70,7 @@ int ev_monitor_core_mod(ev_monitor_core *mcore,  ev_watch_item *w, event ev)
 
 static int make_active(ev_ready_queue *rqueue, ev_handle_event *evlist, int nready)
 {
-	
+
 	int i, nequeued = 0;
 	for(i = 0; i< nready; i++)
 	{

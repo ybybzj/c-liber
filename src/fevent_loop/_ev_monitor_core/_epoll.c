@@ -1,7 +1,9 @@
 #include "_epoll.h"
-#include "_timer.h"
 #include <common/dbg.h>
 #include <system/nx.h>
+struct _ev_monitor_handle{
+	int epfd;
+};
 
 struct _ev_monitor_handle *epoll_get_monitor_handle()
 {
@@ -34,72 +36,57 @@ static inline struct epoll_event make_epev(uint32_t events, ev_watch_item *w)
 static inline uint32_t to_ep_events(ev_set custom)
 {
 	uint32_t events = 0;
-	if(custom&EV_TIMEOUT)
-		events |= EPOLLIN;
 	if(custom&EV_READ)
-		events |= EPOLLIN|EPOLLRDHUP;
+		events |= EPOLLIN;
 	if(custom&EV_WRITE)
 		events |= EPOLLOUT;
-	return events;
+	if(custom&EV_ERR)
+		events |= EPOLLPRI;
+	return events|EPOLLONESHOT;
 }
 
 static inline ev_set to_custom_events(uint32_t ep_events, ev_set old_cevts)
 {
 	uint32_t events = 0;
-	if(ep_events&EPOLLIN || ep_events&EPOLLRDHUP)
-	{
-		if(old_cevts&EV_TIMEOUT)
-			events |= EV_TIMEOUT;
-		else
-			events |= EV_READ;
-	}
-	if(ep_events&EPOLLOUT)
+	if(old_cevts&EV_READ && (ep_events&EPOLLIN ||ep_events&EPOLLHUP || ep_events&EPOLLERR))
+		events |= EV_READ;
+	if(old_cevts&EV_WRITE && (ep_events&EPOLLOUT || ep_events&EPOLLERR))
 		events |= EV_WRITE;
-	if(ep_events&EPOLLERR)
-		events |= EV_ERREV;
+	if(ep_events&EPOLLPRI)
+		events |= EV_ERR;
 	return events;
 }
 /*-------------------------------------------------------------*/
 
 int epoll_add(struct _ev_monitor_handle *h, ev_watch_item *w)
 {
-	check(h != NULL, errno = EINVAL; return -1);
+	check(h != NULL && w != NULL, errno = EINVAL; return -1);
 	uint32_t events = to_ep_events(w->ev.events);
 	check(events != 0, return -1);
 	struct epoll_event epev = make_epev(events, w);
-	if(w->ev.events&EV_TIMEOUT)
-	{
-		check(timer_start(&w->ev) != -1, return -1);
-	}
+
 	return epoll_ctl(h->epfd, EPOLL_CTL_ADD, w->ev.fd, &epev);
 }
 
-int epoll_mod(struct _ev_monitor_handle *h, ev_watch_item *w, event ev)
+int epoll_mod(struct _ev_monitor_handle *h, ev_watch_item *w, fevent ev)
 {
-	check(h != NULL, errno = EINVAL; return -1);
+	check(h != NULL && w != NULL, errno = EINVAL; return -1);
 
 
 	uint32_t evts = to_ep_events(ev.events);
 	if(evts == 0)
 		return 0;
-	
+
 	struct epoll_event epev = make_epev(evts, w);
 
-	if(ev.events&EV_TIMEOUT)
-	{
-		check(timer_start(&ev) != -1, return -1);
-	}
-	if(epoll_ctl(h->epfd, EPOLL_CTL_MOD, w->ev.fd, &epev) == -1)
-	{
-		check_err(epoll_ctl(h->epfd, EPOLL_CTL_ADD, w->ev.fd, &epev) != -1, return -1, "epoll_mod failed!");
-	}
-	return 0;
+	return epoll_ctl(h->epfd, EPOLL_CTL_MOD, w->ev.fd, &epev);
 }
 
 int epoll_del(struct _ev_monitor_handle *h, ev_watch_item *w)
 {
-	check(h != NULL, errno = EINVAL; return -1);
-	return epoll_ctl(h->epfd, EPOLL_CTL_DEL, w->ev.fd, NULL);
+	check(h != NULL && w != NULL, errno = EINVAL; return -1);
+	struct epoll_event epev;
+	return epoll_ctl(h->epfd, EPOLL_CTL_DEL, w->ev.fd, &epev);
 }
 
 
@@ -114,10 +101,6 @@ int epoll_wait_events(struct _ev_monitor_handle *h, ev_handle_event *he_list, si
 	{
 		ev_watch_item *w = (ev_watch_item *)evlist[i].data.ptr;
 		he_list[i].events = to_custom_events(evlist[i].events, w->ev.events);
-		if(he_list[i].events&EV_TIMEOUT)
-		{
-			check(timer_stop(&w->ev) != -1, return -1);
-		}
 		he_list[i].fd = w->ev.fd;
  	}
 	return nready;

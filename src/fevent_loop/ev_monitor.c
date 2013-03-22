@@ -1,19 +1,11 @@
-#include "event_loop.h"
-#include "event_loop/_ev_monitor_core.h"
-#include "event_loop/_ev_watch_pool.h"
-#include "event_loop/_ev_ready_queue.h"
-
+#include "_ev_monitor_ops.h"
+#include "_ev_monitor_core.h"
+#include "_ev_watch_pool.h"
+#include "_ev_ready_queue.h"
 #include <common/dbg.h>
 #include <system/nx.h>
 #include <pthread.h>
 #include <stdarg.h>
-
-//default settings
-#ifndef _EV_TIMEOUT
-#define _EV_TIMEOUT 5 //unit: second
-#endif
-
-
 
 struct _ev_monitor{
 	ev_monitor_core *mcore;
@@ -71,18 +63,32 @@ onerr:
 			ev_watch_pool_free((ev_watch_pool*)cleanup_resource);
 			break;
 		}
-		
+
 		ERR_CLEAN_END
 		return NULL;
 }
 
 
-int ev_monitor_ctl_f(ev_monitor *monitor, int flag, event ev, ...)
+void ev_monitor_free(ev_monitor *monitor)
 {
+	if(monitor == NULL) return;
+
+	ev_loop_stop(monitor);
+	pthread_mutex_destroy(&monitor->run_mtx);
+	ev_ready_queue_free(monitor->rqueue);
+	ev_watch_pool_free(monitor->wpool);
+	ev_monitor_core_free(monitor->mcore);
+
+	free(monitor);
+}
+
+int ev_monitor_ctl_f(ev_monitor *monitor, int flag, fevent ev, ...)
+{
+	check(monitor != NULL, return -1);
 	int ret = 0;
 	va_list argList;
 	va_start(argList,ev);
-	
+
 	switch(flag)
 	{
 		case EV_CTL_ADD:
@@ -116,91 +122,36 @@ int ev_monitor_ctl_f(ev_monitor *monitor, int flag, event ev, ...)
 }
 
 
-int ev_loop_run(ev_monitor *monitor ,int flag)
+//internal use monitor functions, don't need to check monitor != NULL
+void ev_monitor_set_running(ev_monitor *monitor, int run_flag)
 {
-	check(monitor != NULL, errno= EINVAL; return -1);
-	check_err(monitor->running == 0, return -1, "event_loop already running!");
-
 	(void)pthread_mutex_lock(&monitor->run_mtx);
-	monitor->running = 1;
-	(void)pthread_mutex_unlock(&monitor->run_mtx);
-
-	int nready;
-	while((!ev_watch_pool_is_empty(monitor->wpool)|| flag&EV_EMPTY_NOEXIT) && monitor->running)
-	{
-		int aq_empty = ev_ready_queue_is_empty(monitor->rqueue);
-		errno = 0;
-		if(flag&EV_NOBLOCK || !aq_empty)
-		{
-			
-			nready = ev_monitor_core_wait(monitor->mcore, monitor->rqueue, 0);
-
-		}else
-		{
-			nready = ev_monitor_core_wait(monitor->mcore, monitor->rqueue, _EV_TIMEOUT);
-
-			if(nready == 0)
-			{
-				debug("epoll_wait timeout!");
-				continue;
-			}
-		}
-
-		if(nready <= 0)
-		{
-			if(nready == 0)
-			{	
-				if(aq_empty)
-				continue;	
-			}else
-			{
-				if(errno == EINTR)
-				{
-					println("[epoll_wait] signal caught!!!");	
-					continue;
-				}
-				else
-				{
-					print_err("epoll_wait failed!"); 
-					goto onerr;
-				}	
-			}
-
-		}
-
-		ev_ready_queue_dispatch(monitor->rqueue);
-	}
-
-	println("ev_loop_run exit!");
-	return 0;
-
-onerr:
-
-	ev_loop_stop(monitor);
-	return -1;
-
-}
-
-void ev_loop_stop(ev_monitor *monitor)
-{
-	if(monitor == NULL) return;
-
-	(void)pthread_mutex_lock(&monitor->run_mtx);
-	monitor->running = 0;
+	monitor->running = run_flag;
 	(void)pthread_mutex_unlock(&monitor->run_mtx);
 }
 
 
 
-void ev_monitor_free(ev_monitor *monitor)
+int ev_monitor_is_running(ev_monitor *monitor)
 {
-	if(monitor == NULL) return;
+	return monitor->running != EV_LOOP_OFF;
+}
 
-	ev_loop_stop(monitor);
-	pthread_mutex_destroy(&monitor->run_mtx);
-	ev_ready_queue_free(monitor->rqueue);
-	ev_watch_pool_free(monitor->wpool);
-	ev_monitor_core_free(monitor->mcore);
+int ev_monitor_watch_pool_is_empty(ev_monitor *monitor)
+{
+	return ev_watch_pool_is_empty(monitor->wpool);
+}
+int ev_monitor_ready_queue_is_empty(ev_monitor *monitor)
+{
+	return ev_ready_queue_is_empty(monitor->rqueue);
+}
 
-	free(monitor);
+int ev_monitor_wait(ev_monitor *monitor, int timeout)
+{
+	return ev_monitor_core_wait(monitor->mcore, monitor->rqueue, timeout);
+}
+
+int ev_monitor_dispatch(ev_monitor *monitor)
+{
+	return ev_ready_queue_dispatch(monitor->rqueue);
 }

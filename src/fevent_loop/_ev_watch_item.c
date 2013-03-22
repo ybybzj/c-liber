@@ -1,14 +1,15 @@
 #include <common/dbg.h>
+#include <system/nx.h>
 #include "_ev_watch_item.h"
 
 
 
 
-ev_watch_item *ev_watch_item_create(event ev)
+ev_watch_item *ev_watch_item_create(fevent ev)
 {
 	ev_watch_item *w = MALLOC(1,ev_watch_item);
 	check_mem(w != NULL, return NULL,"ev_watch_item_create");
-	
+
 	w->ev = ev;
 	memset(w->cb_list, 0, sizeof(ev_callback) * _EV_EVENT_MAX);
 	rb_node_init(&w->rb);
@@ -19,10 +20,9 @@ void ev_watch_item_free(ev_watch_item *w)
 {
 	if(w == NULL)
 		return;
-	// println("ev_watch_item_free b: %p", w);
 	if((w->ev).ev_data_free != NULL)
 		(w->ev).ev_data_free((w->ev).data.ptr);
-	// println("ev_watch_item_free a: %p", w);
+	close(w->ev.fd); //close opened file descriptor
 	free(w);
 }
 
@@ -53,7 +53,7 @@ ev_callback *ev_watch_item_cb_copy(ev_watch_item *w, ev_callback *cb_list, int l
 	check(w != NULL && cb_list != NULL, return NULL);
 	return memcpy(cb_list, w->cb_list, sizeof(ev_callback)*len);
 }
-	
+
 
 //rbtree operations
 int ev_watch_tree_add(struct rb_tree *tree, ev_watch_item *w)
@@ -97,7 +97,7 @@ ev_watch_item *ev_watch_tree_search(struct rb_tree *tree, int fd)
 	check(tree != NULL, return NULL);
 	struct rb_node *node;
 	node = tree->rb_root;
-	
+
 	while(node != NULL)
 	{
 		int val = (rb_entry(node,ev_watch_item,rb)->ev).fd;
@@ -122,8 +122,8 @@ ev_watch_item *ev_watch_tree_delete(struct rb_tree *tree, int fd)
 	}
 	return w;
 }
-		
-			
+
+
 void ev_watch_tree_node_free(struct rb_node *node)
 {
 	if(node != NULL)

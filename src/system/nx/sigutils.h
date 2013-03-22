@@ -1,6 +1,6 @@
 #ifndef __SIGUTILS_H__
 #define __SIGUTILS_H__
-
+//need _GUN_SOURCE
 #include <stdio.h>
 #include <stdarg.h>
 #include <signal.h>

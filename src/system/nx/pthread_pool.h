@@ -1,6 +1,6 @@
 /* Author: Jack Zheng (ybybzj@gmail.com)
- * 
- * This is a thread pool implementation based on  
+ *
+ * This is a thread pool implementation based on
  * "Multithreaded Programming Guide" from Oracle.
  */
 #ifndef __PTHREAD_POOL_H__
@@ -19,7 +19,7 @@ typedef struct thread_ent thread_ent_t; // thread info struct
  * @t_num_min:		the number of the least threads required by the pool. if 0, use default value.
  * @t_num_max:		the number of the most threads required by the pool. if 0, use default value.
  * @timeout_sec:	the time span of the idle thread will wait until terminate. if < 0, use default value.
- * @attr:			not useful right now
+ * @attr:			the pointer to an attribute object which specify behavior that is different from default thread creation behavior
  * return:			0 on success, otherwise on error
  * (*tpp) will be a valid pointer to thread pool struct, or NULL on error.
  */
@@ -28,7 +28,7 @@ int thr_pool_init(thr_pool_t *tpp, uint_t t_num_min, uint_t t_num_max, int timeo
 /**
  * thr_pool_queue - create a job and put it into pool's job queue
  * @tp:				the pointer to the thread pool.
- * @job_fn:			the job routine, info of the worker thread will be passed in as second argument 
+ * @job_fn:			the job routine, info of the worker thread will be passed in as second argument
  * @arg:			the data pass to the job routine.
  * return:			0 on success, otherwise on error
  * Note: thread_ent_t pointer data should never be used in free function, and only use helper function to manipulate it.
@@ -40,6 +40,18 @@ int thr_pool_queue(thr_pool_t tp, void *(*job_fn)(void *,const thread_ent_t *), 
  * @tp:				the pointer to the thread pool.
  */
 void thr_pool_wait(thr_pool_t tp);
+
+/**
+ * thr_pool_wait_actuve - block until all the active threads are finished and the rest of jobs are dismissed.
+ * @tp:					  the pointer to the thread pool.
+ */
+void thr_pool_wait_active(thr_pool_t tp);
+
+/**
+ * thr_pool_cancel - block until all the ongoing jobs are canceled and no more active threads in the pool
+ * @tp:				the pointer to the thread pool.
+ */
+void thr_pool_cancel(thr_pool_t tp);
 
 /**
  * thr_pool_destroy - cancel the working threads and reap all the threads in the pool, then reclaim the thread pool

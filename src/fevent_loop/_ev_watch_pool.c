@@ -47,10 +47,10 @@ int ev_watch_pool_is_empty(ev_watch_pool *wp)
 	return RB_IS_EMPTY_TREE(&wp->watch_tree);
 }
 
-int ev_watch_pool_add(ev_watch_pool *wp, event ev, va_list argList)
+int ev_watch_pool_add(ev_watch_pool *wp, fevent ev, va_list argList)
 {
 	check(wp != NULL, errno=EINVAL; return -1);
-	
+
 	ev_watch_item *w = ev_watch_item_create(ev);
 	check(w != NULL, return -1);
 
@@ -60,10 +60,10 @@ int ev_watch_pool_add(ev_watch_pool *wp, event ev, va_list argList)
 
 	int ret = 0;
 	(void)pthread_mutex_lock(&wp->mtx);
-	check(ev_watch_tree_add(&wp->watch_tree, w) != -1,
-		ev_monitor_core_del(wp->mcore, w); 
-		ev_watch_item_free(w);
-		ret = -1);
+		check(ev_watch_tree_add(&wp->watch_tree, w) != -1,
+			ev_monitor_core_del(wp->mcore, w);
+			ev_watch_item_free(w);
+			ret = -1);
 	(void)pthread_mutex_unlock(&wp->mtx);
 	return ret;
 }
@@ -76,20 +76,17 @@ int ev_watch_pool_del(ev_watch_pool *wp, int fd)
 	(void)pthread_mutex_lock(&wp->mtx);
 	w = ev_watch_tree_delete(&wp->watch_tree, fd);
 	(void)pthread_mutex_unlock(&wp->mtx);
-	
+
 	if(w != NULL)
 	{
-		if(!(w->ev.events & EV_IGN))
-		{
-			check(ev_monitor_core_del(wp->mcore, w) != -1, ret = -1);
-		}
-		
+
+		check(ev_monitor_core_del(wp->mcore, w) != -1, ret = -1);
 		ev_watch_item_free(w);
 	}
 	return ret;
 }
 
-int ev_watch_pool_mod(ev_watch_pool *wp, event ev, va_list argList)
+int ev_watch_pool_mod(ev_watch_pool *wp, fevent ev, va_list argList)
 {
 	check(wp != NULL, errno=EINVAL; return -1);
 
@@ -100,30 +97,17 @@ int ev_watch_pool_mod(ev_watch_pool *wp, event ev, va_list argList)
 	(void)pthread_mutex_unlock(&wp->mtx);
 
 	if(w == NULL) return 0;
-	
-	if(ev.events == EV_IGN)
-	{
-		if(!(w->ev.events & EV_IGN))
-		{
-			check(ev_monitor_core_del(wp->mcore, w) != -1, return -1);
-		}
-	}else{
-	
-		check(ev_monitor_core_mod(wp->mcore, w, ev) != -1, return -1);
-		
-	}
+
+
+	check(ev_monitor_core_mod(wp->mcore, w, ev) != -1, return -1);
+
 
 	(void)pthread_mutex_lock(&wp->mtx);
-		if(ev.events == EV_IGN)
-		{
-			w->ev.events |= EV_IGN;
-		}else{
-			w->ev.events = ev.events;
-		}
+		w->ev.events = ev.events;
 		(void)ev_watch_item_assign_cb(w, argList);
 	(void)pthread_mutex_unlock(&wp->mtx);
-	
-	
+
+
 	return 0;
 }
 

@@ -15,7 +15,7 @@ struct _ev_ready_queue
 	ev_monitor *monitor;
 	ev_watch_pool *wpool;
 	pthread_mutex_t mtx;
-	list_head rqueue[EV_PRIORITY_MAX]; 
+	list_head rqueue[EV_PRIORITY_MAX];
 	thr_pool_t tp;
 }; //ev_ready_queue
 
@@ -63,7 +63,7 @@ onerr:
 void ev_ready_queue_free(ev_ready_queue *rq)
 {
 	if(rq != NULL)
-	{	
+	{
 		thr_pool_wait(rq->tp);
 		thr_pool_destroy(&rq->tp);
 
@@ -72,11 +72,11 @@ void ev_ready_queue_free(ev_ready_queue *rq)
 		for(; i < EV_PRIORITY_MAX; i++)
 			while(!list_empty(&rq->rqueue[i]))
 			{
-				ev_ready_item *ri = list_entry(list_shift(&rq->rqueue[i]), ev_ready_item, l_ent);	
+				ev_ready_item *ri = list_entry(list_shift(&rq->rqueue[i]), ev_ready_item, l_ent);
 				ev_ready_item_free(ri);
 			}
 		(void)pthread_mutex_unlock(&rq->mtx);
-		
+
 		pthread_mutex_destroy(&rq->mtx);
 
 		free(rq);
@@ -131,7 +131,7 @@ static int ev_ready_queue_dqueue(ev_ready_queue *rq, int priority, ev_ready_item
 	check(rq != NULL && out != NULL, errno=EINVAL; return -1);
 
 	list_head *ready_list = &(rq->rqueue[priority]);
-	if(list_empty(ready_list)) 
+	if(list_empty(ready_list))
 	{
 		*out = NULL;
 		return 0;
@@ -150,11 +150,14 @@ static void *event_handler(void *arg, const thread_ent_t *t_ent UNUSED)
 {
 	ev_ready_item *ri = (ev_ready_item*)arg;
 	if(ri == NULL) return NULL;
-	event ev = ri->ev;
+	fevent ev = ri->ev;
 	ev_monitor *monitor = ri->monitor;
 	ev.events = ev_ready_item_dispatch(ri);
-
-	if(ev.events != 0)
+	if(ev.events&EV_FIN)
+	{
+		check(ev_monitor_ctl(monitor, EV_CTL_DEL, ev) != -1, ev_ready_item_free(ri); return NULL);
+		// check(close(ev.fd) != -1, ev_ready_item_free(ri); return NULL);
+	}else if(ev.events != 0)
 		check(ev_monitor_ctl(monitor, EV_CTL_MOD, ev) != -1, ev_ready_item_free(ri); return NULL);
 	ev_ready_item_free(ri);
 	return NULL;
@@ -172,11 +175,11 @@ int ev_ready_queue_dispatch(ev_ready_queue *rq)
 	ev_ready_item *ri;
 	while(ev_ready_queue_dqueue(rq, hpriority, &ri) == 1)
 	{
-		
-		event ev = ri->ev;
-		ev.events = EV_IGN;
-		ev_monitor *monitor = ri->monitor;
-		check(ev_monitor_ctl(monitor, EV_CTL_MOD, ev) != -1, ev_ready_item_free(ri);continue);
+
+		// event ev = ri->ev;
+		// ev.events = EV_IGN;
+		// ev_monitor *monitor = ri->monitor;
+		// check(ev_monitor_ctl(monitor, EV_CTL_MOD, ev) != -1, ev_ready_item_free(ri);continue);
 		thr_pool_queue(rq->tp, event_handler, (void*)ri);
 	}
 	return 0;

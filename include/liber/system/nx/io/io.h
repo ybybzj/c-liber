@@ -1,6 +1,12 @@
 #ifndef __NET_IO_H__
 #define __NET_IO_H__
 #include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <stdint.h>
+#define FILE_MODE (S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH)
+#define DIR_MODE (FILE_MODE | S_IXUSR|S_IXGRP|S_IXOTH)
+
 #define IO_BUF_SIZE 1024
 typedef struct fd_rbuf
 {
@@ -28,4 +34,30 @@ int make_unblock(int fd);
  * Note: 
  */
 int fd_dump(int rfd, int wfd, void (*finish_cb)(int err, int rfd, int wfd, void *arg), void *arg);
+
+/*return constants that determine the file type: 
+  S_IFREG  -> Regular file
+  S_IFDIR  -> Directory
+  S_IFCHR  -> Character device
+  S_IFBLK  -> Block device
+  S_IFIFO  -> FIFO or pipe
+  S_IFSOCK -> Socket 
+  S_IFLNK  -> Symbolic link
+  -1 	   -> error happened
+*/
+
+enum fd_type
+{
+	FT_REG = (0x01<<0),
+	FT_DIR = (0x01<<1),
+	FT_CHR = (0x01<<2),
+	FT_BLK = (0x01<<3),
+	FT_FIFO = (0x01<<4),
+	FT_SOCK = (0x01<<5),
+	FT_LNK = (0x01<<6),
+};
+
+typedef uint16_t fd_type_t;
+fd_type_t get_fd_type(int fd); 
+
 #endif

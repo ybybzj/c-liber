@@ -1,6 +1,4 @@
-#ifndef _GNU_SOURCE
 #define _GNU_SOURCE
-#endif
 #include "sigutils.h"
 #include <string.h>
 #include <stdarg.h>
@@ -25,7 +23,7 @@ void printSigset(FILE *outf, const char *prefix, const sigset_t *sigset)
 int printSigMask(FILE *outf, const char *msg)
 {
 	sigset_t currMask;
-	
+
 	check(sigprocmask(SIG_BLOCK, NULL, &currMask) != -1,return -1);
 	if(msg != NULL)
 	{

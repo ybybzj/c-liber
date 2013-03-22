@@ -8,7 +8,7 @@ typedef struct _ev_ready_item
 {
 	ev_monitor *monitor;
 	ev_watch_item *w;
-	event ev;
+	fevent ev;
 	dl_ent_t l_ent;
 }ev_ready_item;
 
