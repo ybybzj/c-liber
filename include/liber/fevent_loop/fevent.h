@@ -11,6 +11,7 @@ enum fev_type{
 	EV_READ = (1<<0),
 	EV_WRITE = (1<<1),
 	EV_ERR = (1<<2),
+	EV_ASYNC = (1<<3),
 	//special event type, which cannot be received by ev_callback
 	EV_IGN = (1<<(_EV_EVENT_MAX + 1)),
 	EV_FIN = (1<<(_EV_EVENT_MAX +2)),
@@ -41,4 +42,5 @@ typedef struct{
 #define EV_RD_CB(c) ((event_cb){.et = EV_READ,.cb = c})
 #define EV_WR_CB(c) ((event_cb){.et = EV_WRITE,.cb = c})
 #define EV_ERR_CB(c) ((event_cb){.et = EV_ERR,.cb = c})
+#define EV_ASYNC_CB(c) ((event_cb){.et = EV_ASYNC,.cb = c})
 #endif

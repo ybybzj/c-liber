@@ -13,7 +13,6 @@ typedef struct _ev_watch_item
 ev_watch_item *ev_watch_item_create(fevent);
 void ev_watch_item_free(ev_watch_item *);
 int ev_watch_item_assign_cb(ev_watch_item *, va_list);
-ev_callback *ev_watch_item_cb_copy(ev_watch_item *, ev_callback *, int);
 
 //rbtree operations
 int ev_watch_tree_add(struct rb_tree *, ev_watch_item *);

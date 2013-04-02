@@ -30,11 +30,14 @@ int ev_loop_run(ev_monitor *monitor ,int flag)
 	ev_monitor_set_running(monitor, EV_LOOP_RUN);
 
 	int nready;
-	while((!ev_monitor_watch_pool_is_empty(monitor) || flag&EV_EMPTY_NOEXIT) && ev_monitor_is_running(monitor))
+	while( (ev_monitor_ready_queue_is_running(monitor) ||	    			//condition order is critical, when there is not running job,
+			 !ev_monitor_ready_queue_is_empty(monitor)||					//rq should not be empty
+			!ev_monitor_watch_pool_is_empty(monitor) ||
+			flag&EV_EMPTY_NOEXIT) &&
+			ev_monitor_is_running(monitor))
 	{
-		int aq_empty = ev_monitor_ready_queue_is_empty(monitor);
 		errno = 0;
-		if(flag&EV_NOBLOCK || !aq_empty)
+		if(flag&EV_NOBLOCK || !ev_monitor_ready_queue_is_empty(monitor))
 		{
 
 			nready = ev_monitor_wait(monitor, 0);
@@ -45,27 +48,25 @@ int ev_loop_run(ev_monitor *monitor ,int flag)
 
 			if(nready == 0)
 			{
-				debug("epoll_wait timeout!");
+				debug("monitor_wait timeout!");
 				continue;
 			}
 		}
-
 		if(nready <= 0)
 		{
 			if(nready == 0)
 			{
-				if(aq_empty)
 				continue;
 			}else
 			{
 				if(errno == EINTR)
 				{
-					println("[epoll_wait] signal caught!!!");
+					println("[monitor_wait] signal caught!!!");
 					continue;
 				}
 				else
 				{
-					print_err("epoll_wait failed!");
+					print_err("monitor_wait failed!");
 					goto onerr;
 				}
 			}
@@ -75,7 +76,7 @@ int ev_loop_run(ev_monitor *monitor ,int flag)
 		ev_monitor_dispatch(monitor);
 	}
 
-	println("ev_loop_run exit!");
+	debug_Y("ev_loop_run exit!");
 	return 0;
 
 onerr:
@@ -90,60 +91,8 @@ void ev_loop_stop(ev_monitor *monitor)
 	if(monitor == NULL) return;
 
 	ev_monitor_set_running(monitor,EV_LOOP_OFF);
+	(void)ev_monitor_change_notify(monitor);
 }
 
 
 
-int ev_set_timeout( ev_monitor *monitor,
-					int priority,
-					int delay,
-					int (*tm_cb) (void*),
-					void *arg,
-					void (*arg_free)(void*))
-{
-	check(monitor != NULL, return -1);
-	return add_timeout_ev( monitor,
-						   priority,
-						   delay,
-						   tm_cb,
-						   arg,
-						   arg_free,
-						   EV_TIMEOUT_ONCE);
-}
-
-int ev_set_interval( ev_monitor *monitor,
-					int priority,
-					int delay,
-					int (*tm_cb) (void*),
-					void *arg,
-					void (*arg_free)(void*))
-{
-	check(monitor != NULL, return -1);
-
-	return add_timeout_ev( monitor,
-						   priority,
-						   delay,
-						   tm_cb,
-						   arg,
-						   arg_free,
-						   EV_TIMEOUT_PERIOD);
-}
-
-
-int ev_on_signal(ev_monitor *monitor,
-					int priority,
-					int signal,					// expire time
-					int (*sig_cb) (int,void*),       // signal callback return 0 when done with signal catch
-					void *arg,					// argument passed to callback
-					void (*arg_free)(void*))
-{
-	check(monitor != NULL, return -1);
-
-	return add_signal_ev( monitor,
-						 priority,
-						 signal,
-						 sig_cb,
-						 arg,
-					     arg_free);
-
-}

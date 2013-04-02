@@ -9,9 +9,17 @@
 *	Debugger facilities
 */
 #ifdef NDEBUG
-#define debug(M,...) 
+#define debug(M,...)
+#define debug_R(M,...)
+#define debug_B(M,...)
+#define debug_Y(M,...)
+#define debug_G(M,...)
 #else
-#define debug(M,...) fprintf(stderr, cls_s("DEBUG",cls_Bold;cls_hCyan)" %s:%d: " M "\n",__FILE__,__LINE__,##__VA_ARGS__)			
+#define debug(M,...) fprintf(stderr, cls_s("DEBUG",cls_Bold;cls_hCyan) cls_s(" [%s:%d]: ",cls_hBlack) M "\n",__FILE__,__LINE__,##__VA_ARGS__)
+#define debug_R(M,...) fprintf(stderr, cls_s("DEBUG",cls_Bold;cls_Red) cls_s(" [%s:%d]: ",cls_hBlack) cls_s(M,cls_Red) "\n",__FILE__,__LINE__,##__VA_ARGS__)
+#define debug_B(M,...) fprintf(stderr, cls_s("DEBUG",cls_Bold;cls_Blue) cls_s(" [%s:%d]: ",cls_hBlack) cls_s(M,cls_Blue) "\n",__FILE__,__LINE__,##__VA_ARGS__)
+#define debug_Y(M,...) fprintf(stderr, cls_s("DEBUG",cls_Bold;cls_Yellow) cls_s(" [%s:%d]: ",cls_hBlack) cls_s(M,cls_Yellow) "\n",__FILE__,__LINE__,##__VA_ARGS__)
+#define debug_G(M,...) fprintf(stderr, cls_s("DEBUG",cls_Bold;cls_Green) cls_s(" [%s:%d]: ",cls_hBlack) cls_s(M,cls_Green) "\n",__FILE__,__LINE__,##__VA_ARGS__)
 #endif
 
 #define str_errno() (errno == 0 ? "None" : strerror(errno))

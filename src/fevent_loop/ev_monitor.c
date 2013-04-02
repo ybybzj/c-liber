@@ -7,14 +7,7 @@
 #include <pthread.h>
 #include <stdarg.h>
 
-struct _ev_monitor{
-	ev_monitor_core *mcore;
-	ev_watch_pool *wpool;
-	ev_ready_queue *rqueue;
-	int running;
-	pthread_mutex_t run_mtx;
 
-}; // ev_monitor
 
 ev_monitor *ev_monitor_create()
 {
@@ -32,10 +25,10 @@ ev_monitor *ev_monitor_create()
 	check_t(pthread_mutex_init(&monitor->run_mtx,NULL), goto onerr);
 	ERR_CLEAN_PUSH(2,&monitor->run_mtx,run_mtx);
 
-	check((monitor->wpool = ev_watch_pool_create(monitor->mcore)) != NULL, goto onerr);
+	check((monitor->wpool = ev_watch_pool_create(monitor)) != NULL, goto onerr);
 	ERR_CLEAN_PUSH(3,monitor->wpool,wpool);
 
-	check((monitor->rqueue = ev_ready_queue_create(monitor, monitor->wpool)) != NULL, goto onerr);
+	check((monitor->rqueue = ev_ready_queue_create(monitor)) != NULL, goto onerr);
 
 
 
@@ -94,19 +87,26 @@ int ev_monitor_ctl_f(ev_monitor *monitor, int flag, fevent ev, ...)
 		case EV_CTL_ADD:
 		{
 			check(ev.priority >= 0 && ev.priority < EV_PRIORITY_MAX, errno = EINVAL; ret = -1; break);
-			ret = ev_watch_pool_add(monitor->wpool,ev,argList);
+			if(ev.events&EV_ASYNC)
+				ret = ev_ready_queue_make_ready(monitor->rqueue, ev, argList);
+			else
+				ret = ev_watch_pool_add(monitor->wpool,ev,argList);
 			break;
 		}
 		case EV_CTL_DEL:
 		{
-			ret = ev_watch_pool_del(monitor->wpool, ev.fd);
+			if(!(ev.events&EV_ASYNC))
+				ret = ev_watch_pool_del(monitor->wpool, ev.fd);
 			break;
 		}
 		case EV_CTL_MOD:
 		{
 			if(!(ev.events & EV_IGN))
 				check(ev.priority >= 0 && ev.priority < EV_PRIORITY_MAX, errno = EINVAL; ret = -1; break);
-			ret = ev_watch_pool_mod(monitor->wpool,ev,argList);
+			if(ev.events&EV_ASYNC)
+				ret = ev_ready_queue_make_ready(monitor->rqueue, ev, argList);
+			else
+				ret = ev_watch_pool_mod(monitor->wpool,ev,argList);
 			break;
 		}
 		default:
@@ -118,6 +118,7 @@ int ev_monitor_ctl_f(ev_monitor *monitor, int flag, fevent ev, ...)
 		}
 	}
 	va_end(argList);
+
 	return ret;
 }
 
@@ -146,9 +147,24 @@ int ev_monitor_ready_queue_is_empty(ev_monitor *monitor)
 	return ev_ready_queue_is_empty(monitor->rqueue);
 }
 
+int ev_monitor_ready_queue_is_running(ev_monitor *monitor)
+{
+	return ev_ready_queue_is_running(monitor->rqueue);
+}
+
 int ev_monitor_wait(ev_monitor *monitor, int timeout)
 {
 	return ev_monitor_core_wait(monitor->mcore, monitor->rqueue, timeout);
+}
+
+int ev_monitor_change_notify(ev_monitor *monitor)
+{
+	return ev_monitor_core_notify(monitor->mcore);
+}
+
+int ev_monitor_clear_notification(ev_monitor *monitor)
+{
+	return ev_monitor_core_clear_notification(monitor->mcore);
 }
 
 int ev_monitor_dispatch(ev_monitor *monitor)

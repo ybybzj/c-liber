@@ -2,11 +2,10 @@
 #define __EVENT_WATCH_POOL_H__
 typedef struct _ev_watch_pool ev_watch_pool;
 #include "event_loop.h"
-#include "_ev_monitor_core.h"
 #include "_ev_watch_item.h"
 #include <stdarg.h>
 
-ev_watch_pool *ev_watch_pool_create(ev_monitor_core *);
+ev_watch_pool *ev_watch_pool_create(ev_monitor *);
 void ev_watch_pool_free(ev_watch_pool *);
 
 int ev_watch_pool_is_empty(ev_watch_pool *);

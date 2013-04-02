@@ -1,28 +1,11 @@
 #include "_epoll.h"
 #include <common/dbg.h>
 #include <system/nx.h>
+// #include <system/nx/io/io.h>
 struct _ev_monitor_handle{
 	int epfd;
+	int pfd[2];				// pipe use for monitor change notification
 };
-
-struct _ev_monitor_handle *epoll_get_monitor_handle()
-{
-	struct _ev_monitor_handle *handle = MALLOC(1, struct _ev_monitor_handle);
-	check_mem(handle != NULL, return NULL, "epoll_get_monitor_handle allocation");
-
-	check((handle->epfd = epoll_create(10)) != -1, free(handle); return NULL);
-	return handle;
-}
-
-void epoll_free_monitor_handle(struct _ev_monitor_handle *handle)
-{
-	if(handle != NULL)
-	{
-		close(handle->epfd);
-		free(handle);
-	}
-}
-
 /*-----------------epoll helpers---------------------------*/
 static inline struct epoll_event make_epev(uint32_t events, ev_watch_item *w)
 {
@@ -56,7 +39,62 @@ static inline ev_set to_custom_events(uint32_t ep_events, ev_set old_cevts)
 		events |= EV_ERR;
 	return events;
 }
-/*-------------------------------------------------------------*/
+/*----------------------------------------------------------------------------------*/
+struct _ev_monitor_handle *epoll_get_monitor_handle()
+{
+
+	ERR_CLEAN_INIT();
+	struct _ev_monitor_handle *handle = MALLOC(1, struct _ev_monitor_handle);
+	check_mem(handle != NULL, return NULL, "epoll_get_monitor_handle allocation");
+	ERR_CLEAN_PUSH(0,handle,handle);
+
+	check((handle->epfd = epoll_create(10)) != -1, goto onerr);
+	ERR_CLEAN_PUSH(1,&handle->epfd,epfd);
+
+	check(pipe(handle->pfd) != -1, goto onerr);
+	ERR_CLEAN_PUSH(1,&handle->pfd[0],pfd0);
+	ERR_CLEAN_PUSH(1,&handle->pfd[1],pfd1);
+	check(make_unblock(handle->pfd[0]) != -1, goto onerr);
+	check(make_unblock(handle->pfd[1]) != -1, goto onerr);
+
+	struct epoll_event epev;
+	epev.events = EPOLLIN;
+	epev.data.ptr = handle;
+	check(epoll_ctl(handle->epfd, EPOLL_CTL_ADD, handle->pfd[0], &epev) != -1, goto onerr);
+	return handle;
+
+onerr:
+	ERR_CLEAN_BEGIN
+		case 0:
+			{
+				free((struct _ev_monitor_handle *)cleanup_resource);
+				break;
+			}
+		case 1:
+			{
+				int *fdp = (int*)cleanup_resource;
+
+				close(*fdp);
+				break;
+			}
+
+	ERR_CLEAN_END
+	return NULL;
+}
+
+void epoll_free_monitor_handle(struct _ev_monitor_handle *handle)
+{
+	if(handle != NULL)
+	{
+		struct epoll_event epev;
+		epoll_ctl(handle->epfd, EPOLL_CTL_DEL,handle->pfd[0], &epev);
+		close(handle->epfd);
+		close(handle->pfd[0]);
+		close(handle->pfd[1]);
+		free(handle);
+	}
+}
+
 
 int epoll_add(struct _ev_monitor_handle *h, ev_watch_item *w)
 {
@@ -99,9 +137,54 @@ int epoll_wait_events(struct _ev_monitor_handle *h, ev_handle_event *he_list, si
 	int i = 0;
 	for(; i < nready; i++)
 	{
-		ev_watch_item *w = (ev_watch_item *)evlist[i].data.ptr;
-		he_list[i].events = to_custom_events(evlist[i].events, w->ev.events);
-		he_list[i].fd = w->ev.fd;
+		if((unsigned char*)evlist[i].data.ptr == (unsigned char*)h)
+		{
+			// debug("epoll_notify");
+			check(epoll_clear_notification(h) != -1, return -1);
+			he_list[i].events = 0;
+			he_list[i].fd = -1;
+		}else
+		{
+			ev_watch_item *w = (ev_watch_item *)evlist[i].data.ptr;
+			he_list[i].events = to_custom_events(evlist[i].events, w->ev.events);
+			he_list[i].fd = w->ev.fd;
+		}
+
  	}
 	return nready;
+}
+
+int epoll_notify(struct _ev_monitor_handle *h)
+{
+	check(h != NULL, return -1);
+	int wfd = h->pfd[1];
+	if(write(wfd, "x", 1) == -1 && !(errno == EAGAIN || errno == EWOULDBLOCK))
+	{
+		print_err("[epoll_notify]: write to wfd(%d) failed!", wfd);
+		return -1;
+	}
+	return 0;
+}
+
+int epoll_clear_notification(struct _ev_monitor_handle *h)
+{
+	check(h != NULL, return -1);
+	int rfd = h->pfd[0];
+	char ch;
+	for(;;)
+	{
+		if( read(rfd, &ch, 1) == -1 )
+		{
+			if(errno == EINTR)
+				continue;
+			else if(errno == EAGAIN || errno == EWOULDBLOCK)
+				break;
+			else
+			{
+				print_err("[epoll_clear_notification] read from %d failed!", rfd);
+				return -1;
+			}
+		}
+	}
+	return 0;
 }

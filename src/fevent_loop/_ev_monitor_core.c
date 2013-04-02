@@ -1,6 +1,7 @@
 #include <common/dbg.h>
 #include "_ev_monitor_core.h"
-
+#include "_ev_monitor_ops.h"
+#include "_ev_ready_queue.h"
 
 #include "_ev_monitor_core/_ev_handle_event.h"
 
@@ -25,6 +26,8 @@ struct _ev_monitor_core
 #define ev_monitor_handle_mod(h,w,e) epoll_mod((h), (w), (e))
 #define ev_monitor_handle_del(h,w) epoll_del((h), (w))
 #define ev_monitor_handle_wait(h, evlist, l, timeout) epoll_wait_events((h), (evlist), (l), (timeout))
+#define ev_monitor_handle_notify(h) epoll_notify((h))
+#define ev_monitor_handle_clear_notification(h) epoll_clear_notification((h))
 #endif
 
 ev_monitor_core *ev_monitor_core_create(ev_monitor *monitor)
@@ -50,19 +53,22 @@ void ev_monitor_core_free(ev_monitor_core *mcore)
 
 int ev_monitor_core_add(ev_monitor_core *mcore,  ev_watch_item *w)
 {
-	check(mcore != NULL, return -1);
+	check(mcore != NULL && w != NULL, return -1);
+
 	return ev_monitor_handle_add(mcore->handle, w);
 }
 
 int ev_monitor_core_del(ev_monitor_core *mcore,  ev_watch_item *w)
 {
-	check(mcore != NULL, return -1);
+	check(mcore != NULL && w != NULL, return -1);
+
 	return ev_monitor_handle_del(mcore->handle, w);
 }
 
 int ev_monitor_core_mod(ev_monitor_core *mcore,  ev_watch_item *w, fevent ev)
 {
-	check(mcore != NULL, return -1);
+	check(mcore != NULL && w != NULL, return -1);
+
 	return ev_monitor_handle_mod(mcore->handle, w, ev);
 }
 
@@ -74,19 +80,29 @@ static int make_active(ev_ready_queue *rqueue, ev_handle_event *evlist, int nrea
 	int i, nequeued = 0;
 	for(i = 0; i< nready; i++)
 	{
-		if(ev_ready_queue_equeue(rqueue, evlist[i].fd, evlist[i].events) == 0)
+		if(evlist[i].fd != -1 &&ev_ready_queue_wait_equeue(rqueue, evlist[i].fd, evlist[i].events) == 0)
 			nequeued++;
 	}
 	return nequeued;
 }
 
+int ev_monitor_core_notify(ev_monitor_core *mcore)
+{
+	return ev_monitor_handle_notify(mcore->handle);
+}
+
+int ev_monitor_core_clear_notification(ev_monitor_core *mcore)
+{
+	return ev_monitor_handle_clear_notification(mcore->handle);
+}
 
 int ev_monitor_core_wait(ev_monitor_core *mcore, ev_ready_queue *rq, int timeout)
 {
 	check(mcore != NULL, return -1);
 	ev_handle_event evlist[_EV_MAX_TRIGGER_EVENT];
 	int nready = ev_monitor_handle_wait(mcore->handle, evlist, _EV_MAX_TRIGGER_EVENT, timeout);
-	if(nready > 0)
-		make_active(rq, evlist, nready);
-	return nready;
+	make_active(rq, evlist, nready);
+	// if(ev_ready_queue_is_empty(rq))
+	// 	debug_R("[ev_monitor_handle_wait] rq is empty!!!");
+	return nready < 0 ? -1 : ev_ready_queue_nready(rq);
 }

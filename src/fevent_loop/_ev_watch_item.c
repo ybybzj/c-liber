@@ -1,6 +1,7 @@
 #include <common/dbg.h>
 #include <system/nx.h>
 #include "_ev_watch_item.h"
+#include "_ev_helpers.h"
 
 
 
@@ -30,28 +31,7 @@ int ev_watch_item_assign_cb(ev_watch_item *w, va_list argList)
 {
 	check(w != NULL, return -1);
 
-	event_cb tc_ent = va_arg(argList,event_cb);
-	while(!EV_TYPE_CB_IS_NIL(tc_ent))
-	{
-		ev_set events = tc_ent.et;
-		int idx = 0;
-		for(;idx < _EV_EVENT_MAX; idx++)
-		{
-			if(events & 0x01)
-				w->cb_list[idx] = tc_ent.cb;
-			events = events >> 1;
-			if(events == 0)
-				break;
-		}
-		tc_ent = va_arg(argList,event_cb);
-	}
-	return 0;
-}
-
-ev_callback *ev_watch_item_cb_copy(ev_watch_item *w, ev_callback *cb_list, int len)
-{
-	check(w != NULL && cb_list != NULL, return NULL);
-	return memcpy(cb_list, w->cb_list, sizeof(ev_callback)*len);
+	return ev_assign_cb(w->cb_list, _EV_EVENT_MAX, argList);
 }
 
 

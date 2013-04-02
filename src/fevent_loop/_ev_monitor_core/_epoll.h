@@ -12,6 +12,8 @@ int epoll_add(struct _ev_monitor_handle *, ev_watch_item *);
 int epoll_mod(struct _ev_monitor_handle *, ev_watch_item *, fevent);
 int epoll_del(struct _ev_monitor_handle *, ev_watch_item *);
 
+int epoll_notify(struct _ev_monitor_handle *);
+int epoll_clear_notification(struct _ev_monitor_handle *);
 int epoll_wait_events(struct _ev_monitor_handle *, ev_handle_event *, size_t, int);
 
 #endif
